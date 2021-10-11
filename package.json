@@ -1,0 +1,30 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/detleph/server.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/detleph/server/issues"
+  },
+  "homepage": "https://github.com/detleph/server#readme",
+  "dependencies": {
+    "@prisma/client": "^3.2.1",
+    "express": "^4.17.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.13",
+    "@types/node": "^16.10.3",
+    "prisma": "^3.2.1",
+    "ts-node": "^10.2.1",
+    "typescript": "^4.4.3"
+  }
+}

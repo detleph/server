@@ -1,0 +1,85 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Event {
+  id            Int            @id
+  date          DateTime
+  disciplines   Discipline[]
+  admins        Admin[]
+  organisations Oragnisation[]
+  campaigns     Campaign[]
+}
+
+model Admin {
+  id       Int    @id
+  name     String
+  password String
+  level    Int
+  event    Event  @relation(fields: [eventId], references: [id])
+  eventId  Int
+}
+
+model Campaign {
+  id      Int      @id
+  ends    DateTime
+  limit   Int      @default(40)
+  curr    Int      @default(0)
+  links   String[]
+  group   Group    @relation(fields: [groupId], references: [id])
+  Event   Event    @relation(fields: [eventId], references: [id])
+  eventId Int
+  groupId Int
+}
+
+model Discipline {
+  id          Int     @id
+  name        String
+  minteamsize Int
+  maxteamsize Int
+  event       Event   @relation(fields: [eventId], references: [id])
+  eventId     Int
+  teams       Teams[]
+}
+
+model Teams {
+  id           Int           @id
+  name         String
+  startdate    DateTime
+  participants Participant[]
+  discipline   Discipline    @relation(fields: [disciplineId], references: [id])
+  disciplineId Int
+}
+
+model Participant {
+  id        Int    @id
+  firstname String
+  lastname  String
+  email     String
+  teams     Teams  @relation(fields: [teamsId], references: [id])
+  teamsId   Int
+}
+
+model Oragnisation {
+  id      Int     @id
+  name    String
+  groups  Group[]
+  Event   Event   @relation(fields: [eventId], references: [id])
+  eventId Int
+}
+
+model Group {
+  id             Int          @id
+  name           String
+  Oragnisation   Oragnisation @relation(fields: [oragnisationId], references: [id])
+  oragnisationId Int
+  Campaign       Campaign[]
+}

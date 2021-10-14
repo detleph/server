@@ -1,5 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Schema for the main database
 
 datasource db {
   provider = "postgresql"
@@ -11,8 +10,10 @@ generator client {
 }
 
 model Event {
-  id            Int            @id
-  date          DateTime
+  id   Int      @id @default(autoincrement()) // Primary key
+  pid  String   @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid // Public key
+  date DateTime
+
   disciplines   Discipline[]
   admins        Admin[]
   organisations Oragnisation[]
@@ -20,66 +21,79 @@ model Event {
 }
 
 model Admin {
-  id       Int    @id
-  name     String
-  password String
-  level    Int
-  event    Event  @relation(fields: [eventId], references: [id])
-  eventId  Int
+  id               Int    @id @default(autoincrement())
+  pid              String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String
+  password         String // TODO: Probably specify hash size (VarChar or some other type)
+  permission_level Int // TODO: Maybe extract into an enum
+
+  event   Event @relation(fields: [eventId], references: [id])
+  eventId Int
 }
 
 model Campaign {
-  id      Int      @id
-  ends    DateTime
-  limit   Int      @default(40)
-  curr    Int      @default(0)
-  links   String[]
-  group   Group    @relation(fields: [groupId], references: [id])
-  Event   Event    @relation(fields: [eventId], references: [id])
-  eventId Int
+  id          Int      @id @default(autoincrement())
+  pid         String   @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  expiresAt   DateTime
+  user_limit  Int      @default(40)
+  user_number Int      @default(0)
+  links       String[]
+
+  group   Group @relation(fields: [groupId], references: [id])
   groupId Int
+  event   Event @relation(fields: [eventId], references: [id])
+  eventId Int
 }
 
 model Discipline {
-  id          Int     @id
+  id          Int    @id @default(autoincrement())
+  pid         String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String
-  minteamsize Int
-  maxteamsize Int
-  event       Event   @relation(fields: [eventId], references: [id])
-  eventId     Int
-  teams       Teams[]
+  minTeamSize Int    @default(1)
+  maxTeamSize Int    @default(1)
+
+  teams   Team[]
+  event   Event  @relation(fields: [eventId], references: [id])
+  eventId Int
 }
 
-model Teams {
-  id           Int           @id
-  name         String
-  startdate    DateTime
+model Team {
+  id   Int    @id @default(autoincrement())
+  pid  String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name String
+
   participants Participant[]
   discipline   Discipline    @relation(fields: [disciplineId], references: [id])
   disciplineId Int
 }
 
 model Participant {
-  id        Int    @id
-  firstname String
-  lastname  String
+  id        Int    @id @default(autoincrement())
+  pid       String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  firstName String
+  lastName  String
   email     String
-  teams     Teams  @relation(fields: [teamsId], references: [id])
-  teamsId   Int
+
+  team   Team @relation(fields: [teamId], references: [id])
+  teamId Int
 }
 
 model Oragnisation {
-  id      Int     @id
-  name    String
+  id   Int    @id @default(autoincrement())
+  pid  String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name String
+
   groups  Group[]
-  Event   Event   @relation(fields: [eventId], references: [id])
+  event   Event   @relation(fields: [eventId], references: [id])
   eventId Int
 }
 
 model Group {
-  id             Int          @id
-  name           String
-  Oragnisation   Oragnisation @relation(fields: [oragnisationId], references: [id])
+  id   Int    @id @default(autoincrement())
+  pid  String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name String
+
+  oragnisation   Oragnisation @relation(fields: [oragnisationId], references: [id])
   oragnisationId Int
-  Campaign       Campaign[]
+  campaign       Campaign[]
 }

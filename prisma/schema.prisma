@@ -13,6 +13,7 @@ model Event {
   id   Int      @id @default(autoincrement()) // Primary key
   pid  String   @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid // Public key
   date DateTime
+  name String
 
   disciplines   Discipline[]
   admins        Admin[]

@@ -1,0 +1,28 @@
+# This workflow checks whether all files conform with the Prettier configuration
+
+name: Check prettier formatting
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+    
+  workflow_dispatch:
+
+jobs:
+  # Job to check the formatting
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      - name: Install prettier
+        run: npm i -g prettier
+
+      - name: Check formatting 
+        run: prettier -c .

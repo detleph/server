@@ -1,0 +1,33 @@
+# This workflow runs Prettier and formats all files
+
+name: Format files using prettier
+
+on:
+  workflow_dispatch:
+
+jobs:
+  # Job to check the formatting
+  format:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      - name: Install prettier
+        run: npm i -g prettier
+
+      - name: Format using prettier 
+        run: prettier -w .
+        
+      - name: Make pull request
+        uses: peter-evans/create-pull-request@v3
+        with:
+          commit-message: "[create-pull-request] push formatted files"
+          delete-branch: true
+          title: "Reformat files using prettier"
+          
+          
+          

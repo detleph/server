@@ -13,6 +13,7 @@ async function main() {
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
 
+  // All API endpoints are behind /api/...
   app.use("/api/events", eventRouter);
 
   app.listen(process.env.PORT, () => {
@@ -27,3 +28,5 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+
+export default app;

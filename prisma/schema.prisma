@@ -47,15 +47,27 @@ model Campaign {
 }
 
 model Discipline {
-  id          Int    @id @default(autoincrement())
-  pid         String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id          Int     @id @default(autoincrement())
+  pid         String  @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String
-  minTeamSize Int    @default(1)
-  maxTeamSize Int    @default(1)
+  minTeamSize Int     @default(1)
+  maxTeamSize Int     @default(1)
+  roles       Roles[]
 
   teams   Team[]
   event   Event  @relation(fields: [eventId], references: [id])
   eventId Int
+}
+
+model Roles {
+  id   Int    @id @default(autoincrement())
+  pid  String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name String
+
+  roles         Participant @relation(fields: [participantId], references: [id])
+  discipline    Discipline? @relation(fields: [disciplineId], references: [id])
+  disciplineId  Int?
+  participantId Int
 }
 
 model Team {
@@ -75,8 +87,9 @@ model Participant {
   lastName  String
   email     String
 
-  team   Team @relation(fields: [teamId], references: [id])
+  team   Team    @relation(fields: [teamId], references: [id])
   teamId Int
+  Roles  Roles[]
 }
 
 model Oragnisation {

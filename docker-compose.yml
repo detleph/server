@@ -1,0 +1,22 @@
+version: "3"
+services:
+        mail:
+                image: boky/postfix
+                restart: always
+                environment:
+                        - ALLOWED_SENDER_DOMAINS=mail.${DOMAIN}
+                ports: 
+                        - "587:587"
+                container_name: "postfix"
+        postgres:
+                image: postgres
+                restart: always
+                environment:
+                        - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+                ports:
+                        - 5432:5432
+                container_name: "postgres"
+        #server:
+        #        build: .
+        #        restart: always
+        #        container_name: "server"

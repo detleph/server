@@ -105,6 +105,3 @@ dist
 
 # Prisma
 prisma/migrations
-
-# Ignore config files for containers
-host/

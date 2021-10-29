@@ -5,8 +5,9 @@ import chaiHttp from "chai-http";
 import server from "../app";
 import prisma from "../lib/prisma";
 
-chai.use(chaiHttp);
 const should = chai.should();
+
+chai.use(chaiHttp);
 
 describe("events", () => {
   beforeEach("clear database", (done) => {

@@ -2,6 +2,8 @@ import express from "express";
 import prisma from "./lib/prisma";
 import eventRouter from "./Routes/event.routes";
 
+import mail from "./lib/mail";
+
 require("dotenv").config(); // Load dotenv config
 
 const app = express();

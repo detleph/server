@@ -9,7 +9,7 @@ services:
       - "587:587"
     container_name: "postfix"
     volumes:
-      - ./host/keys/:etc/opendkim/keys
+      - ./host/keys/:/etc/opendkim/keys
   postgres:
     image: postgres
     restart: always

@@ -75,9 +75,11 @@ model Team {
   pid  String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name String
 
-  participants Participant[]
+  participants Participant[] @relation(name: "participants")
   discipline   Discipline    @relation(fields: [disciplineId], references: [id])
   disciplineId Int
+  leader Participant         @relation(name: "leader", fields: [leaderId], references: [id])
+  leaderId Int
 }
 
 model Participant {
@@ -87,8 +89,9 @@ model Participant {
   lastName  String
   email     String
 
-  team   Team    @relation(fields: [teamId], references: [id])
+  team   Team    @relation(name: "participants", fields: [teamId], references: [id])
   teamId Int
+  leaderOf Team? @relation(name: "leader")
   roles  Role[]
 }
 

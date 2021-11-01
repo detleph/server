@@ -52,22 +52,22 @@ model Discipline {
   name        String
   minTeamSize Int     @default(1)
   maxTeamSize Int     @default(1)
-  roles       Roles[]
+  roles       Role[]
 
   teams   Team[]
   event   Event  @relation(fields: [eventId], references: [id])
   eventId Int
 }
 
-model Roles {
+model Role {
   id   Int    @id @default(autoincrement())
   pid  String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name String
+  schema Json
 
-  roles         Participant @relation(fields: [participantId], references: [id])
-  discipline    Discipline? @relation(fields: [disciplineId], references: [id])
-  disciplineId  Int?
-  participantId Int
+  participant   Participant[]
+  discipline    Discipline @relation(fields: [disciplineId], references: [id])
+  disciplineId  Int
 }
 
 model Team {
@@ -89,7 +89,7 @@ model Participant {
 
   team   Team    @relation(fields: [teamId], references: [id])
   teamId Int
-  Roles  Roles[]
+  roles  Role[]
 }
 
 model Oragnisation {

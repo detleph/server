@@ -18,7 +18,6 @@ model Event {
   disciplines   Discipline[]
   admins        Admin[]
   organisations Oragnisation[]
-  campaigns     Campaign[]
 }
 
 model Admin {
@@ -36,14 +35,10 @@ model Campaign {
   id          Int      @id @default(autoincrement())
   pid         String   @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   expiresAt   DateTime
-  user_limit  Int      @default(40)
-  user_number Int      @default(0)
-  links       String[]
+  link       String
 
   group   Group @relation(fields: [groupId], references: [id])
   groupId Int
-  event   Event @relation(fields: [eventId], references: [id])
-  eventId Int
 }
 
 model Discipline {
@@ -89,10 +84,13 @@ model Participant {
   lastName  String
   email     String
 
+  group Group    @relation(fields: [groupId], references: [id])
+  groupId Int
   team   Team    @relation(name: "participants", fields: [teamId], references: [id])
   teamId Int
   leaderOf Team? @relation(name: "leader")
   roles  Role[]
+  
 }
 
 model Oragnisation {
@@ -106,11 +104,14 @@ model Oragnisation {
 }
 
 model Group {
-  id   Int    @id @default(autoincrement())
-  pid  String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id   Int        @id @default(autoincrement())
+  pid  String     @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name String
+  user_limit Int  @default(40)
+  user_number Int @default(0)
 
   oragnisation   Oragnisation @relation(fields: [oragnisationId], references: [id])
   oragnisationId Int
-  campaign       Campaign[]
+  participants Participant[]
+  campaign Campaign[]
 }

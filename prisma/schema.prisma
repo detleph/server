@@ -28,7 +28,7 @@ model Campaign {
   user_limit  Int      @default(40)
   user_number Int      @default(0)
   
-  event   Event? @relation(fields: [eventId], references: [id])
+  event   Event @relation(fields: [eventId], references: [id])
   links   LinkObject[]
   eventId Int
 
@@ -50,7 +50,7 @@ model Admin {
   pid              String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name             String
   password         String // TODO: Probably specify hash size (VarChar or some other type)
-  permission_level Int // TODO: Maybe extract into an enum
+  permission_level permission_level @default(STANDARD)
 
   event   Event @relation(fields: [eventId], references: [id])
   eventId Int
@@ -98,7 +98,7 @@ model Participant {
   firstName String
   lastName  String
   email     String
-  gender    String
+  gender    Gender
 
   group Group    @relation(fields: [groupId], references: [id])
   groupId Int
@@ -131,4 +131,15 @@ model Group {
   oragnisationId Int
   participants Participant[]
   link LinkObject?
+}
+
+enum permission_level {
+  STANDARD
+  ELEVATED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHERS
 }

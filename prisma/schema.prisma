@@ -17,7 +17,32 @@ model Event {
 
   disciplines   Discipline[]
   admins        Admin[]
-  organisations Oragnisation[]
+  organisations Organisation[]
+  campaign Campaign?
+}
+
+model Campaign {
+  id          Int      @id @default(autoincrement())
+  pid         String   @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  expiresAt   DateTime
+  user_limit  Int      @default(40)
+  user_number Int      @default(0)
+  
+  event   Event? @relation(fields: [eventId], references: [id])
+  links   LinkObject[]
+  eventId Int
+
+}
+
+model LinkObject {
+  id      Int      @id @default(autoincrement())
+  pid     String   @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  link    String
+
+  campaign Campaign @relation(fields: [campaignId], references: [id])
+  campaignId Int
+  group   Group @relation(fields: [groupId], references: [id])
+  groupId Int
 }
 
 model Admin {
@@ -31,22 +56,12 @@ model Admin {
   eventId Int
 }
 
-model Campaign {
-  id          Int      @id @default(autoincrement())
-  pid         String   @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  expiresAt   DateTime
-  link       String
-
-  group   Group @relation(fields: [groupId], references: [id])
-  groupId Int
-}
-
 model Discipline {
   id          Int     @id @default(autoincrement())
   pid         String  @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String
-  minTeamSize Int     @default(1)
-  maxTeamSize Int     @default(1)
+  minTeamSize Int
+  maxTeamSize Int
   roles       Role[]
 
   teams   Team[]
@@ -73,7 +88,7 @@ model Team {
   participants Participant[] @relation(name: "participants")
   discipline   Discipline    @relation(fields: [disciplineId], references: [id])
   disciplineId Int
-  leader Participant         @relation(name: "leader", fields: [leaderId], references: [id])
+  leader Participant?         @relation(name: "leader", fields: [leaderId], references: [id])
   leaderId Int
 }
 
@@ -83,6 +98,7 @@ model Participant {
   firstName String
   lastName  String
   email     String
+  gender    String
 
   group Group    @relation(fields: [groupId], references: [id])
   groupId Int
@@ -93,7 +109,7 @@ model Participant {
   
 }
 
-model Oragnisation {
+model Organisation {
   id   Int    @id @default(autoincrement())
   pid  String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name String
@@ -109,9 +125,10 @@ model Group {
   name String
   user_limit Int  @default(40)
   user_number Int @default(0)
+  level Int
 
-  oragnisation   Oragnisation @relation(fields: [oragnisationId], references: [id])
+  oragnisation   Organisation @relation(fields: [oragnisationId], references: [id])
   oragnisationId Int
   participants Participant[]
-  campaign Campaign[]
+  link LinkObject?
 }

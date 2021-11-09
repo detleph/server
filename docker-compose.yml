@@ -18,6 +18,10 @@ services:
     ports:
       - 5432:5432
     container_name: "postgres"
+  redis:
+    image: redis
+    restart: always
+
   #server:
   #        build: .
   #        restart: always

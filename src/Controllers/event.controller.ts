@@ -5,6 +5,7 @@ const getAllEvents = async (req: Request, res: Response) => {
   const events = await prisma.event.findMany({
     select: {
       name: true,
+      description: true,
       date: true,
       pid: true,
       id: false,
@@ -26,6 +27,7 @@ const addEvent = async (req: Request, res: Response) => {
     data: {
       name: req.body.name,
       date: req.body.date,
+      description: req.body.description,
     },
     select: {
       name: true,

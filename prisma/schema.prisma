@@ -14,6 +14,7 @@ model Event {
   pid  String   @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid // Public key
   date DateTime
   name String
+  description String
 
   disciplines   Discipline[]
   admins        Admin[]
@@ -24,6 +25,7 @@ model Event {
 model Campaign {
   id        Int      @id @default(autoincrement())
   pid       String   @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  start     DateTime
   expiresAt DateTime
 
   event   Event        @relation(fields: [eventId], references: [id])
@@ -38,7 +40,7 @@ model Link {
 
   campaign   Campaign @relation(fields: [campaignId], references: [id])
   campaignId Int
-  group      Group    @relation(fields: [groupId], references: [id])
+  group      Group?   @relation(fields: [groupId], references: [id])
   groupId    Int      @unique
 }
 
@@ -48,6 +50,8 @@ model Admin {
   name             String
   password         String // TODO: Probably specify hash size (VarChar or some other type)
   permission_level AdminLevel @default(STANDARD)
+  revision         String
+  groups           Group[]
 
   event   Event @relation(fields: [eventId], references: [id])
   eventId Int
@@ -127,6 +131,7 @@ model Group {
   oragnisationId Int
   participants   Participant[]
   link           Link?
+  admins         Admin[]
 }
 
 enum AdminLevel {
@@ -137,5 +142,5 @@ enum AdminLevel {
 enum Gender {
   MALE
   FEMALE
-  OTHERS
+  OTHER
 }

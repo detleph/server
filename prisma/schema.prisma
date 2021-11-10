@@ -10,10 +10,10 @@ generator client {
 }
 
 model Event {
-  id   Int      @id @default(autoincrement()) // Primary key
-  pid  String   @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid // Public key
-  date DateTime
-  name String
+  id          Int      @id @default(autoincrement()) // Primary key
+  pid         String   @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid // Public key
+  date        DateTime
+  name        String
   description String
 
   disciplines   Discipline[]
@@ -28,9 +28,9 @@ model Campaign {
   start     DateTime
   expiresAt DateTime
 
-  event   Event        @relation(fields: [eventId], references: [id])
   links   Link[]
-  eventId Int          @unique
+  event   Event  @relation(fields: [eventId], references: [id])
+  eventId Int    @unique
 }
 
 model Link {
@@ -121,11 +121,11 @@ model Organisation {
 }
 
 model Group {
-  id          Int    @id @default(autoincrement())
-  pid         String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String
-  user_limit  Int    @default(40)
-  level       Int
+  id         Int    @id @default(autoincrement())
+  pid        String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  user_limit Int    @default(40)
+  level      Int
 
   oragnisation   Organisation  @relation(fields: [oragnisationId], references: [id])
   oragnisationId Int

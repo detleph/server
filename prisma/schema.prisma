@@ -18,7 +18,7 @@ model Event {
   disciplines   Discipline[]
   admins        Admin[]
   organisations Organisation[]
-  campaign      Campaign?
+  campaign      Campaign[]
 }
 
 model Campaign {
@@ -27,12 +27,11 @@ model Campaign {
   expiresAt DateTime
 
   event   Event        @relation(fields: [eventId], references: [id])
-  links   LinkObject[]
+  links   Link[]
   eventId Int          @unique
-
 }
 
-model LinkObject {
+model Link {
   id   Int    @id @default(autoincrement())
   pid  String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   link String
@@ -48,7 +47,7 @@ model Admin {
   pid              String     @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name             String
   password         String // TODO: Probably specify hash size (VarChar or some other type)
-  permission_level LevelAdmin @default(STANDARD)
+  permission_level AdminLevel @default(STANDARD)
 
   event   Event @relation(fields: [eventId], references: [id])
   eventId Int
@@ -122,16 +121,15 @@ model Group {
   pid         String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String
   user_limit  Int    @default(40)
-  user_number Int    @default(0)
   level       Int
 
   oragnisation   Organisation  @relation(fields: [oragnisationId], references: [id])
   oragnisationId Int
   participants   Participant[]
-  link           LinkObject?
+  link           Link?
 }
 
-enum LevelAdmin {
+enum AdminLevel {
   STANDARD
   ELEVATED
 }

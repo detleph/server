@@ -10,7 +10,7 @@ const verifyAuthorizationFormat = (authorization: string) => /^Bearer .+$/.test(
 
 const getBearerToken = (authorization: string) => authorization.slice(7);
 
-const requireAuthentication = async (req: Request, res: Response, next: NextFunction) => {
+export const requireAuthentication = async (req: Request, res: Response, next: NextFunction) => {
   const { authorization } = req.headers;
 
   if (!authorization) {

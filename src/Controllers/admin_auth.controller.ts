@@ -8,8 +8,17 @@ import jwt from "jsonwebtoken";
 const JWT_SECRET = process.env.JWT_SECRET || "secret";
 const TOKEN_EXPIRY = "4 days";
 
+export interface AuthJWTPayload {
+  pid: string;
+  name: string;
+  permission_level: AdminLevel;
+  revision: string;
+  groups: string[];
+}
+
 function createAdminJWT(admin: Admin & { groups: Group[] }) {
-  const payload: { name: string; permission_level: AdminLevel; revision: string; groups: string[] } = {
+  const payload: AuthJWTPayload = {
+    pid: admin.pid,
     name: admin.name,
     permission_level: admin.permission_level,
     revision: admin.revision,

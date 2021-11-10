@@ -1,23 +1,21 @@
 import { Request, Response } from "express";
-import { Admin } from ".prisma/client";
+import { Admin, AdminLevel, Group } from "@prisma/client";
 import prisma from "../lib/prisma";
 import argon2 from "argon2";
 import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET || "secret";
+const TOKEN_EXPIRY = "4 days";
 
-function createAdminJWT(admin: Admin) {
-  let payload: { name: string; permission_level: number; revision: string; group?: string } = {
+function createAdminJWT(admin: Admin & { groups: Group[] }) {
+  const payload: { name: string; permission_level: AdminLevel; revision: string; groups: string[] } = {
     name: admin.name,
     permission_level: admin.permission_level,
-    revision: "", // TODO: Revision in the schema is pending
+    revision: admin.revision,
+    groups: admin.groups.map((group) => group.pid),
   };
 
-  if (admin.permission_level > 0) {
-    payload = { ...payload, group: "" }; // TODO: Group association for admins in the schema is pending
-  }
-
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "4 hours" });
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: TOKEN_EXPIRY });
 }
 
 interface AuthenticateUserBody {
@@ -39,7 +37,7 @@ export const authenticateUser = async (req: Request<{}, {}, AuthenticateUserBody
     });
   }
 
-  const user = await prisma.admin.findFirst({ where: { name } });
+  const user = await prisma.admin.findFirst({ where: { name }, include: { groups: true } });
 
   // REVIEW: It is possible to initiate a timing attack here (To see which users exist)
   //         This should, however, not be of too much concern, as one can basically do nothing

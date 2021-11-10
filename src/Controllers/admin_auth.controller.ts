@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { Admin, AdminLevel, Group } from "@prisma/client";
+import { authClient } from "../lib/redis";
 import prisma from "../lib/prisma";
 import argon2 from "argon2";
 import jwt from "jsonwebtoken";
@@ -55,6 +56,9 @@ export const authenticateUser = async (req: Request<{}, {}, AuthenticateUserBody
   const param_password_hash = await argon2.hash(password, { type: argon2.argon2id });
 
   if (param_password_hash === user.password) {
+    // Set password revision ID in redis
+    await authClient.set(user.pid, user.revision);
+
     return {
       type: "success",
       payload: {

@@ -1,3 +1,5 @@
+/// <reference path="../../custom.d.ts" />
+
 import { NextFunction, Request, Response } from "express";
 import { AuthJWTPayload } from "../../Controllers/admin_auth.controller";
 import { authClient } from "../../lib/redis";

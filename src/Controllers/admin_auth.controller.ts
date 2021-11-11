@@ -36,7 +36,7 @@ interface AuthenticateUserBody {
 export const authenticateUser = async (req: Request<{}, {}, AuthenticateUserBody>, res: Response) => {
   // TODO: Provide more useful error messages (Maybe express-validator?)
 
-  const { name, password } = req.body;
+  const { name, password } = req.body || {};
 
   if (name == null || password == null) {
     return res.status(400).json({
@@ -62,24 +62,22 @@ export const authenticateUser = async (req: Request<{}, {}, AuthenticateUserBody
     });
   }
 
-  const param_password_hash = await argon2.hash(password, { type: argon2.argon2id });
-
-  if (param_password_hash === user.password) {
+  if (await argon2.verify(user.password, password, { type: argon2.argon2id })) {
     // Set password revision ID in redis
     await authClient.set(user.pid, user.revision);
 
-    return {
+    return res.status(200).json({
       type: "success",
       payload: {
         token: createAdminJWT(user),
       },
-    };
+    });
   }
 
-  return {
+  return res.status(403).json({
     type: "error",
     payload: {
       message: "The provided credentials are not valid",
     },
-  };
+  });
 };

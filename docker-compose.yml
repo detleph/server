@@ -18,7 +18,13 @@ services:
     ports:
       - 5432:5432
     container_name: "postgres"
-  #server:
-  #        build: .
-  #        restart: always
-  #        container_name: "server"
+  server:
+    build: .
+    restart: always
+    container_name: "server"
+    ports:
+      - ${PORT}:${PORT}
+    environment:
+      - PORT=${PORT}
+      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}

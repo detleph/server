@@ -6,7 +6,7 @@ FROM node:17-alpine3.12
 RUN mkdir /app
 
 # Copy dependency files
-COPY package.json package-lock.json /app
+COPY package.json package-lock.json /app/
 
 # Change directory into the container
 WORKDIR /app
@@ -19,7 +19,7 @@ RUN npm i
 ADD prisma/ /app/prisma/
 ADD scripts/ /app/scripts/
 ADD src/ /app/src/
-COPY tsconfig.json /app
+COPY tsconfig.json /app/
 
 # Generate the prisma client
 RUN npx prisma generate

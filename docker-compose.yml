@@ -14,11 +14,17 @@ services:
     image: postgres
     restart: always
     environment:
+      - POSTGRES_USER=server
       - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
-    ports:
-      - 5432:5432
     container_name: "postgres"
-  #server:
-  #        build: .
-  #        restart: always
-  #        container_name: "server"
+  server:
+    build: .
+    restart: always
+    container_name: "server"
+    ports:
+      - ${PORT:-3000}:${PORT:-3000}
+    environment:
+      - PORT=${PORT:-3000}
+      - DATABASE_URL=postgresql://server:${DATABASE_PASSWORD}@postgres:5432/management?schema=public
+      - DATABASE_USER=server
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}

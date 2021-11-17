@@ -1,4 +1,4 @@
-version: "3"
+version: "3.4"
 services:
   mail:
     image: boky/postfix
@@ -22,7 +22,10 @@ services:
     image: redis
     restart: always
   server:
-    build: .
+    # REVIEW: This is setting the network context to host (during build time) which is generally considered a bad idea
+    build:
+      context: .
+      network: host
     restart: always
     container_name: "server"
     ports:

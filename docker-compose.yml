@@ -17,6 +17,9 @@ services:
       - POSTGRES_USER=server
       - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
     container_name: "postgres"
+  redis:
+    image: redis
+    restart: always
   server:
     build: .
     restart: always

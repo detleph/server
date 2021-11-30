@@ -1,6 +1,7 @@
 import express from "express";
 import prisma from "./lib/prisma";
 import eventRouter from "./Routes/event.routes";
+import adminAuthRouter from "./Routes/admin_auth.routes";
 
 require("dotenv").config(); // Load dotenv config
 
@@ -12,6 +13,9 @@ async function main() {
   // Bodyparser and urlencoded to parse post request bodies
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
+
+  // Admin authentication endpoints
+  app.use("/api/authentication", adminAuthRouter);
 
   // All API endpoints are behind /api/...
   app.use("/api/events", eventRouter);

@@ -3,7 +3,7 @@
 DATABASE_PASSWORD=server docker-compose up -d mail postgres redis
 
 if [ ! "$(docker ps -a | grep server_dev)" ]; then
-    echo Creating "server_dev" container
+    echo "Creating \"server_dev\" container"
     
     docker run -it \
         --name server_dev \

@@ -10,4 +10,4 @@ if ! test -f INITIALIZED; then
     npx prisma db push
 fi
 
-nodemon /app/src/app.ts
+nodemon --watch /app /app/src/app.ts

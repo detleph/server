@@ -1,5 +1,9 @@
+import { writeFile } from "fs";
 import nodemailer from "nodemailer";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
+
+import mjml from "./mjml"
+
 
 let mailAccount = { user: process.env.MAILUSER + "@mail." + process.env.DOMAIN, pass: process.env.MAILPASSWORD };
 
@@ -46,5 +50,15 @@ const sendMail = async (from: string, to: string, subject: string, text?: string
     html: html,
   });
 };
+
+const verificationMail = async (to: string, ) => {
+  const message = mjml.getTemplate("emailVerification")
+ 
+  //TODO: replace handlebars with code
+  //TODO: Implement verification codes
+  //TODO: Write endpoints to verify codes
+
+  sendMail(mailAccount.user,to,"Verify Email",undefined,message);
+}
 
 export default { sendMail, mailAccount };

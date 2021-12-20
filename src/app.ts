@@ -2,12 +2,20 @@ import express from "express";
 import prisma from "./lib/prisma";
 import eventRouter from "./Routes/event.routes";
 import adminAuthRouter from "./Routes/admin_auth.routes";
+import argon2 from "argon2";
 
 require("dotenv").config(); // Load dotenv config
 
 const app = express();
 
 async function main() {
+  // Dev
+  await prisma.admin.upsert({
+    where: { id: 1 },
+    create: { name: "admin", password: await argon2.hash("test", { type: argon2.argon2id }) },
+    update: {},
+  });
+
   // Todo: Everything
 
   // Bodyparser and urlencoded to parse post request bodies

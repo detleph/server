@@ -13,7 +13,11 @@ async function main() {
   // Dev
   await prisma.admin.upsert({
     where: { id: 1 },
-    create: { name: "admin", password: await argon2.hash("test", { type: argon2.argon2id }) },
+    create: {
+      name: "admin",
+      password: await argon2.hash("test", { type: argon2.argon2id }),
+      permission_level: "ELEVATED",
+    },
     update: {},
   });
 

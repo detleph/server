@@ -3,6 +3,7 @@ import prisma from "./lib/prisma";
 import eventRouter from "./Routes/event.routes";
 import adminAuthRouter from "./Routes/admin_auth.routes";
 import argon2 from "argon2";
+import adminRouter from "./Routes/admin.routes";
 
 require("dotenv").config(); // Load dotenv config
 
@@ -27,6 +28,8 @@ async function main() {
 
   // All API endpoints are behind /api/...
   app.use("/api/events", eventRouter);
+
+  app.use("/api/admins", adminRouter);
 
   app.listen(process.env.PORT, () => {
     console.log(`Listening on Port: ${process.env.PORT}`);

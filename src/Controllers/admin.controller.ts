@@ -121,3 +121,95 @@ export const createAdmin = async (req: Request<{}, {}, CreateAdminBody>, res: Re
     },
   });
 };
+
+interface UpdatePasswordBody {
+  name?: string;
+  password?: string;
+  new_password: string;
+}
+
+// Expects a valid username (Should be tested beforehand)
+const updatePasswordField = async (name: string, new_password: string) => {
+  const new_password_hash = await argon2.hash(new_password, { type: argon2.argon2id });
+
+  await prisma.admin.updateMany({ where: { name }, data: { password: new_password_hash } });
+};
+
+// requires: auth
+export const updatePassword = async (req: Request<{}, {}, UpdatePasswordBody>, res: Response) => {
+  if (!req.auth?.isAuthenticated) {
+    return res.status(500).json(AUTH_ERROR);
+  }
+
+  const name = req.body.name || req.auth.name;
+
+  if (typeof req.body.new_password !== "string") {
+    return res.status(400).json({
+      type: "error",
+      payload: {
+        message: "The body of your request did not conform to the requirements",
+        schema: {
+          body: {
+            new_password: "string",
+          },
+        },
+      },
+    });
+  }
+
+  const user_to_upate = await prisma.admin.findFirst({ where: { name } });
+
+  if (!user_to_upate) {
+    // REVIEW: This allows potential attackers (which are authorized with some account)
+    //         to test account names
+    return res.status(404).json({
+      type: "error",
+      payload: {
+        message: "The requested user was not found",
+      },
+    });
+  }
+
+  if (req.auth.permission_level == "ELEVATED" && user_to_upate.permission_level == "STANDARD") {
+    updatePasswordField(name, req.body.new_password);
+
+    res.status(200).json({
+      type: "success",
+    });
+  } else if (req.auth.name === name) {
+    if (typeof req.body.password !== "string") {
+      return res.status(400).json({
+        type: "error",
+        payload: "The body of your request did not conform to the requirements",
+        schema: {
+          body: {
+            password: "string",
+            new_password: "string",
+          },
+        },
+      });
+    }
+
+    if (await argon2.verify(user_to_upate.password, req.body.password, { type: argon2.argon2id })) {
+      updatePasswordField(name, req.body.new_password);
+
+      return res.status(200).json({
+        type: "success",
+      });
+    }
+
+    return res.status(401).json({
+      type: "error",
+      payload: {
+        message: "The provided password is not valid",
+      },
+    });
+  } else {
+    res.status(403).json({
+      type: "error",
+      payload: {
+        message: "Operation not permitted; Try logging in as another user",
+      },
+    });
+  }
+};

@@ -21,7 +21,7 @@ function createAdminJWT(admin: Admin & { groups: Group[] }) {
     pid: admin.pid,
     name: admin.name,
     permission_level: admin.permission_level,
-    revision: admin.revision,
+    revision: admin.revision.toISOString(),
     groups: admin.groups.map((group) => group.pid),
   };
 
@@ -64,7 +64,7 @@ export const authenticateUser = async (req: Request<{}, {}, AuthenticateUserBody
 
   if (await argon2.verify(user.password, password, { type: argon2.argon2id })) {
     // Set password revision ID in redis
-    await authClient.set(user.pid, user.revision);
+    await authClient.set(user.pid, user.revision.toISOString());
 
     return res.status(200).json({
       type: "success",

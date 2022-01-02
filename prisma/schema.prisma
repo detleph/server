@@ -49,7 +49,7 @@ model Admin {
   name             String // TODO: This should maybe be unique
   password         String // TODO: Probably specify hash size (VarChar or some other type)
   permission_level AdminLevel @default(STANDARD)
-  revision         String     @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  revision         DateTime   @default(now())
   groups           Group[]
 }
 

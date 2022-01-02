@@ -2,6 +2,7 @@ import prisma from "../lib/prisma";
 import { Request, Response } from "express";
 import { AdminLevel } from "@prisma/client";
 import argon2 from "argon2";
+import { DataType, generateInvalidBodyError } from "./common";
 
 const AUTH_ERROR = {
   type: "failure",
@@ -122,12 +123,6 @@ export const createAdmin = async (req: Request<{}, {}, CreateAdminBody>, res: Re
   });
 };
 
-interface UpdatePasswordBody {
-  pid?: string;
-  password?: string;
-  new_password: string;
-}
-
 // Expects a valid username (Should be tested beforehand)
 const updatePasswordField = async (pid: string, new_password: string) => {
   const new_password_hash = await argon2.hash(new_password, { type: argon2.argon2id });
@@ -135,26 +130,70 @@ const updatePasswordField = async (pid: string, new_password: string) => {
   await prisma.admin.update({ where: { pid }, data: { password: new_password_hash } });
 };
 
-// requires: auth
-export const updatePassword = async (req: Request<{}, {}, UpdatePasswordBody>, res: Response) => {
+interface UpdateForeignPasswordBody {
+  new_password?: string;
+}
+
+interface UpdateForeignPasswordQueryParams {
+  pid: string;
+}
+
+export const updateForeignPassword = async (
+  req: Request<UpdateForeignPasswordQueryParams, {}, UpdateForeignPasswordBody>,
+  res: Response
+) => {
   if (!req.auth?.isAuthenticated) {
     return res.status(500).json(AUTH_ERROR);
   }
 
-  const pid = req.body.pid || req.auth.pid;
-
   if (typeof req.body.new_password !== "string") {
-    return res.status(400).json({
+    return res.status(400).json(generateInvalidBodyError({ new_password: DataType.STRING }));
+  }
+
+  const user_to_upate = await prisma.admin.findUnique({ where: { pid: req.params.pid } });
+
+  if (!user_to_upate) {
+    // REVIEW: This allows potential attackers (which are authorized with some account)
+    //         to test account names
+    return res.status(404).json({
       type: "error",
       payload: {
-        message: "The body of your request did not conform to the requirements",
-        schema: {
-          body: {
-            new_password: "string",
-          },
-        },
+        message: "The requested user was not found",
       },
     });
+  }
+
+  if (req.auth.permission_level == "ELEVATED" && user_to_upate.permission_level == "STANDARD") {
+    updatePasswordField(req.params.pid, req.body.new_password);
+
+    res.status(200).json({
+      type: "success",
+    });
+  } else {
+    res.status(403).json({
+      type: "error",
+      payload: {
+        message: "Operation not permitted; Try logging in as another user",
+      },
+    });
+  }
+};
+
+interface UpdatePasswordBody {
+  password?: string;
+  new_password?: string;
+}
+
+// requires: auth
+export const updateOwnPassword = async (req: Request<{}, {}, UpdatePasswordBody>, res: Response) => {
+  if (!req.auth?.isAuthenticated) {
+    return res.status(500).json(AUTH_ERROR);
+  }
+
+  const pid = req.auth.pid;
+
+  if (typeof req.body.password !== "string" || typeof req.body.new_password !== "string") {
+    return res.status(400).json(generateInvalidBodyError({ password: DataType.STRING, new_password: DataType.STRING }));
   }
 
   const user_to_upate = await prisma.admin.findUnique({ where: { pid } });
@@ -170,46 +209,18 @@ export const updatePassword = async (req: Request<{}, {}, UpdatePasswordBody>, r
     });
   }
 
-  if (req.auth.permission_level == "ELEVATED" && user_to_upate.permission_level == "STANDARD") {
+  if (await argon2.verify(user_to_upate.password, req.body.password, { type: argon2.argon2id })) {
     updatePasswordField(pid, req.body.new_password);
 
-    res.status(200).json({
+    return res.status(200).json({
       type: "success",
     });
-  } else if (req.auth.pid === pid) {
-    if (typeof req.body.password !== "string") {
-      return res.status(400).json({
-        type: "error",
-        payload: "The body of your request did not conform to the requirements",
-        schema: {
-          body: {
-            password: "string",
-            new_password: "string",
-          },
-        },
-      });
-    }
-
-    if (await argon2.verify(user_to_upate.password, req.body.password, { type: argon2.argon2id })) {
-      updatePasswordField(pid, req.body.new_password);
-
-      return res.status(200).json({
-        type: "success",
-      });
-    }
-
-    return res.status(401).json({
-      type: "error",
-      payload: {
-        message: "The provided password is not valid",
-      },
-    });
-  } else {
-    res.status(403).json({
-      type: "error",
-      payload: {
-        message: "Operation not permitted; Try logging in as another user",
-      },
-    });
   }
+
+  return res.status(401).json({
+    type: "error",
+    payload: {
+      message: "The provided password is not valid",
+    },
+  });
 };

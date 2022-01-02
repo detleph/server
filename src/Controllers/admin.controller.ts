@@ -87,19 +87,13 @@ export const createAdmin = async (req: Request<{}, {}, CreateAdminBody>, res: Re
   if (
     !(typeof name === "string" && typeof password == "string" && isPermissionLevel(permission_level) && groupsIsValid)
   ) {
-    return res.status(400).json({
-      type: "error",
-      payload: {
-        message: "The body of your request did not conform to the requirements",
-        schema: {
-          body: {
-            name: "string",
-            password_level: "string",
-            permission_level: "'STANDARD' | 'ELEVATED'",
-          },
-        },
-      },
-    });
+    return res.status(400).json(
+      generateInvalidBodyError({
+        name: DataType.STRING,
+        password: DataType.STRING,
+        permission_level: DataType.PERMISSION_LEVEL,
+      })
+    );
   }
 
   const password_hash = await argon2.hash(password, { type: argon2.argon2id });

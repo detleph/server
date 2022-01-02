@@ -123,16 +123,16 @@ export const createAdmin = async (req: Request<{}, {}, CreateAdminBody>, res: Re
 };
 
 interface UpdatePasswordBody {
-  name?: string;
+  pid?: string;
   password?: string;
   new_password: string;
 }
 
 // Expects a valid username (Should be tested beforehand)
-const updatePasswordField = async (name: string, new_password: string) => {
+const updatePasswordField = async (pid: string, new_password: string) => {
   const new_password_hash = await argon2.hash(new_password, { type: argon2.argon2id });
 
-  await prisma.admin.updateMany({ where: { name }, data: { password: new_password_hash } });
+  await prisma.admin.update({ where: { pid }, data: { password: new_password_hash } });
 };
 
 // requires: auth
@@ -141,7 +141,7 @@ export const updatePassword = async (req: Request<{}, {}, UpdatePasswordBody>, r
     return res.status(500).json(AUTH_ERROR);
   }
 
-  const name = req.body.name || req.auth.name;
+  const pid = req.body.pid || req.auth.pid;
 
   if (typeof req.body.new_password !== "string") {
     return res.status(400).json({
@@ -157,7 +157,7 @@ export const updatePassword = async (req: Request<{}, {}, UpdatePasswordBody>, r
     });
   }
 
-  const user_to_upate = await prisma.admin.findFirst({ where: { name } });
+  const user_to_upate = await prisma.admin.findUnique({ where: { pid } });
 
   if (!user_to_upate) {
     // REVIEW: This allows potential attackers (which are authorized with some account)
@@ -171,12 +171,12 @@ export const updatePassword = async (req: Request<{}, {}, UpdatePasswordBody>, r
   }
 
   if (req.auth.permission_level == "ELEVATED" && user_to_upate.permission_level == "STANDARD") {
-    updatePasswordField(name, req.body.new_password);
+    updatePasswordField(pid, req.body.new_password);
 
     res.status(200).json({
       type: "success",
     });
-  } else if (req.auth.name === name) {
+  } else if (req.auth.pid === pid) {
     if (typeof req.body.password !== "string") {
       return res.status(400).json({
         type: "error",
@@ -191,7 +191,7 @@ export const updatePassword = async (req: Request<{}, {}, UpdatePasswordBody>, r
     }
 
     if (await argon2.verify(user_to_upate.password, req.body.password, { type: argon2.argon2id })) {
-      updatePasswordField(name, req.body.new_password);
+      updatePasswordField(pid, req.body.new_password);
 
       return res.status(200).json({
         type: "success",

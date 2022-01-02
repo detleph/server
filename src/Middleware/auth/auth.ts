@@ -62,7 +62,7 @@ export const requireAuthentication = async (req: Request, res: Response, next: N
     const user = await prisma.admin.findUnique({ where: { pid }, select: { revision: true } });
 
     if (user) {
-      db_revision = user.revision;
+      db_revision = user.revision.toISOString();
 
       await authClient.set(pid, db_revision);
     }

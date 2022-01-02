@@ -3,6 +3,18 @@ import { Request, Response } from "express";
 import { AdminLevel } from "@prisma/client";
 import argon2 from "argon2";
 import { DataType, generateInvalidBodyError } from "./common";
+import { authClient } from "../lib/redis";
+
+export const regenerateRevision = async (pid: string) => {
+  // TOOO: Add error handling
+  const { revision } = await prisma.admin.update({
+    where: { pid },
+    data: { revision: new Date() },
+    select: { revision: true },
+  });
+
+  await authClient.set(pid, revision.toISOString());
+};
 
 const AUTH_ERROR = {
   type: "failure",
@@ -164,7 +176,8 @@ export const updateForeignPassword = async (
   }
 
   if (req.auth.permission_level == "ELEVATED" && user_to_upate.permission_level == "STANDARD") {
-    updatePasswordField(req.params.pid, req.body.new_password);
+    await updatePasswordField(req.params.pid, req.body.new_password); // REVIEW: Should this be awaited?
+    await regenerateRevision(req.params.pid);
 
     res.status(200).json({
       type: "success",
@@ -210,7 +223,8 @@ export const updateOwnPassword = async (req: Request<{}, {}, UpdatePasswordBody>
   }
 
   if (await argon2.verify(user_to_upate.password, req.body.password, { type: argon2.argon2id })) {
-    updatePasswordField(pid, req.body.new_password);
+    await updatePasswordField(pid, req.body.new_password);
+    await regenerateRevision(pid);
 
     return res.status(200).json({
       type: "success",

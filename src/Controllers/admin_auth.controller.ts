@@ -4,6 +4,7 @@ import { authClient } from "../lib/redis";
 import prisma from "../lib/prisma";
 import argon2 from "argon2";
 import jwt from "jsonwebtoken";
+import { DataType, generateInvalidBodyError } from "./common";
 
 const JWT_SECRET = process.env.JWT_SECRET || "secret";
 const TOKEN_EXPIRY = "4 days";
@@ -39,12 +40,7 @@ export const authenticateUser = async (req: Request<{}, {}, AuthenticateUserBody
   const { name, password } = req.body || {};
 
   if (name == null || password == null) {
-    return res.status(400).json({
-      type: "error",
-      payload: {
-        message: "The body must contain 'name' and 'password' attributes of type string",
-      },
-    });
+    return res.status(400).json(generateInvalidBodyError({ name: DataType.STRING, password: DataType.STRING }));
   }
 
   const user = await prisma.admin.findFirst({ where: { name }, include: { groups: true } });

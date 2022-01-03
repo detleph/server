@@ -17,7 +17,6 @@ model Event {
   description String
 
   disciplines   Discipline[]
-  admins        Admin[]
   organisations Organisation[]
   campaign      Campaign[]
 }
@@ -47,14 +46,11 @@ model Link {
 model Admin {
   id               Int        @id @default(autoincrement())
   pid              String     @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name             String
+  name             String // TODO: This should maybe be unique
   password         String // TODO: Probably specify hash size (VarChar or some other type)
   permission_level AdminLevel @default(STANDARD)
-  revision         String
+  revision         DateTime   @default(now())
   groups           Group[]
-
-  event   Event @relation(fields: [eventId], references: [id])
-  eventId Int
 }
 
 model Discipline {

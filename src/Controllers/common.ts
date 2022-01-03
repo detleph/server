@@ -3,6 +3,21 @@ import { PrismaClientKnownRequestError, PrismaClientUnknownRequestError } from "
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
 
+interface StringIndexedObject {
+  [k: string]: any;
+}
+
+export function createError(message: string, payload: StringIndexedObject = {}, links: StringIndexedObject = {}) {
+  return {
+    type: "error",
+    payload: {
+      message: message,
+      ...payload,
+    },
+    _links: links,
+  };
+}
+
 export enum DataType {
   STRING = "string",
   NUMBER = "number",

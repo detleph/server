@@ -52,7 +52,6 @@ async function main() {
 
   app.use("/api/admins", adminRouter);
 
-<<<<<<< HEAD
   app.use("/api/organisations", organisationRouter);
 
   app.use("/api/groups", groupRouter);
@@ -63,9 +62,11 @@ async function main() {
 
   // Error handling
   app.use(defaultErrorHandler); // Not working
-=======
+
   app.use("/api/media", mediaRouter);
->>>>>>> Add express.static() to serve semi-static files
+
+  // Disable the media router for now
+  // app.use("/api/media", mediaRouter);
 
   app.listen(process.env.PORT, () => {
     logger.info(`Listening on port ${process.env.PORT}`);

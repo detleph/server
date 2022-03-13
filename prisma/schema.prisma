@@ -46,8 +46,9 @@ model Link {
 model Admin {
   id               Int        @id @default(autoincrement())
   pid              String     @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name             String // TODO: This should maybe be unique
+  name             String     @unique
   password         String // TODO: Probably specify hash size (VarChar or some other type)
+
   permission_level AdminLevel @default(STANDARD)
   revision         DateTime   @default(now())
   groups           Group[]
@@ -59,34 +60,33 @@ model Discipline {
   name        String
   minTeamSize Int
   maxTeamSize Int
-  roles       Role[]
+  roles       RoleSchema[]
 
   teams   Team[]
   event   Event  @relation(fields: [eventId], references: [id])
   eventId Int
 }
 
-model Role {
+model RoleSchema {
   id     Int    @id @default(autoincrement())
   pid    String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name   String
   schema Json
 
-  participant  Participant[]
-  discipline   Discipline    @relation(fields: [disciplineId], references: [id])
+  roles        Role[]
+  discipline   Discipline @relation(fields: [disciplineId], references: [id])
   disciplineId Int
 }
 
 model Team {
-  id   Int    @id @default(autoincrement())
-  pid  String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name String
+  id          Int    @id @default(autoincrement())
+  pid         String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  leaderEmail String
 
-  participants Participant[] @relation(name: "participants")
-  discipline   Discipline    @relation(fields: [disciplineId], references: [id])
+  roles        Role[]     @relation(name: "participants")
+  discipline   Discipline @relation(fields: [disciplineId], references: [id])
   disciplineId Int
-  leader       Participant?  @relation(name: "leader", fields: [leaderId], references: [id])
-  leaderId     Int           @unique
 }
 
 model Participant {
@@ -94,16 +94,26 @@ model Participant {
   pid       String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   firstName String
   lastName  String
-  email     String
   gender    Gender
 
   group    Group  @relation(fields: [groupId], references: [id])
   groupId  Int
-  team     Team   @relation(name: "participants", fields: [teamId], references: [id])
-  teamId   Int
-  leaderOf Team?  @relation(name: "leader")
   roles    Role[]
+}
 
+model Role {
+  id         Int    @id @default(autoincrement())
+  pid        String @unique @default(dbgenerated("gen_random"))
+  name       String //e.g. runner, swimmer,...
+  importance Job
+  score      String
+
+  participant   Participant? @relation(fields: [participantId], references: [id])
+  participantId Int?
+  team          Team         @relation(name: "participants", fields: [teamId], references: [id])
+  teamId        Int
+  schema        RoleSchema   @relation(fields: [schemaId], references: [id])
+  schemaId      Int
 }
 
 model Organisation {
@@ -139,4 +149,9 @@ enum Gender {
   MALE
   FEMALE
   OTHER
+}
+
+enum Job {
+  TEAMLEADER
+  MEMBER
 }

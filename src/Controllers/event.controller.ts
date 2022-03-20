@@ -1,7 +1,9 @@
+import { Prisma } from "@prisma/client";
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
+import { DataType, generateInvalidBodyError } from "./common";
 
-const getAllEvents = async (req: Request, res: Response) => {
+export const getAllEvents = async (req: Request, res: Response) => {
   const events = await prisma.event.findMany({
     select: {
       name: true,
@@ -11,17 +13,84 @@ const getAllEvents = async (req: Request, res: Response) => {
       id: false,
     },
   });
-  if (events.length > 0) res.status(200).send(events);
-  else res.status(204).send();
+  if (events.length > 0) res.status(200).json(events);
+  else res.status(200).json([]);
 };
 
-const addEvent = async (req: Request, res: Response) => {
-  // TODO: Add checks if user has admin permissions
+export const getEvent = async (req: Request, res: Response) => {
+  const eventId = req.params.eventId;
 
-  if (req.body.name == null || undefined || req.body.date == null || undefined) {
-    res.status(400).send("Malformed request");
+  if (eventId === undefined || null) {
+    res.status(400).json(
+      generateInvalidBodyError({
+        eventId: DataType.STRING,
+      })
+    );
     return;
   }
+  try {
+    const event = await prisma.event.findUnique({
+      where: {
+        pid: eventId,
+      },
+      select: {
+        name: true,
+        description: true,
+        date: true,
+        pid: true,
+        id: false,
+      },
+    });
+
+    res.status(200).json(event);
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError) {
+      res.status(500).json({
+        type: "error",
+        payload: {
+          message: `Internal Server error occured. Try again later`,
+        },
+      });
+      return;
+    }
+    if (e instanceof Prisma.PrismaClientUnknownRequestError) {
+      res.status(500).json({
+        type: "error",
+        payload: {
+          message: "Unknown error occured with your request. Check if your parameters are correct",
+          shema: {
+            eventId: DataType.UUID,
+          },
+        },
+      });
+      return;
+    }
+  }
+};
+
+export const addEvent = async (req: Request, res: Response) => {
+  if (
+    req.body.name == null ||
+    undefined ||
+    typeof req.body.name !== "string" ||
+    req.body.date == null ||
+    undefined ||
+    typeof req.body.date !== "string" ||
+    req.body.description == null ||
+    undefined ||
+    typeof req.body.description !== "string"
+  ) {
+    res.status(400).json(
+      generateInvalidBodyError({
+        name: DataType.STRING,
+        date: DataType.DATETIME,
+        description: DataType.STRING,
+      })
+    );
+    return;
+  }
+
+  //TODO: Check if date is valid
 
   const event = await prisma.event.create({
     data: {
@@ -36,7 +105,11 @@ const addEvent = async (req: Request, res: Response) => {
       id: false,
     },
   });
-  res.status(201).send(event);
-};
 
-export { getAllEvents, addEvent };
+  res.status(201).json({
+    type: "succes",
+    payload: {
+      event,
+    },
+  });
+};

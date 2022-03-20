@@ -3,6 +3,8 @@ export enum DataType {
   NUMBER = "number",
   INTEGER = "integer",
   PERMISSION_LEVEL = "'ELEVATED' | 'STANDARD'",
+  DATETIME = "ISOstring (8601)",
+  UUID = "UUID string",
 }
 
 interface Body {

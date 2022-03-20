@@ -19,6 +19,7 @@ model Event {
   disciplines   Discipline[]
   organisations Organisation[]
   campaign      Campaign[]
+  visual        VisualElement[]
 }
 
 model Campaign {
@@ -44,10 +45,10 @@ model Link {
 }
 
 model Admin {
-  id               Int        @id @default(autoincrement())
-  pid              String     @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name             String     @unique
-  password         String // TODO: Probably specify hash size (VarChar or some other type)
+  id       Int    @id @default(autoincrement())
+  pid      String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name     String @unique
+  password String // TODO: Probably specify hash size (VarChar or some other type)
 
   permission_level AdminLevel @default(STANDARD)
   revision         DateTime   @default(now())
@@ -55,16 +56,17 @@ model Admin {
 }
 
 model Discipline {
-  id          Int    @id @default(autoincrement())
-  pid         String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id          Int          @id @default(autoincrement())
+  pid         String       @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String
   minTeamSize Int
   maxTeamSize Int
   roles       RoleSchema[]
 
   teams   Team[]
-  event   Event  @relation(fields: [eventId], references: [id])
+  event   Event           @relation(fields: [eventId], references: [id])
   eventId Int
+  visual  VisualElement[]
 }
 
 model RoleSchema {
@@ -74,8 +76,9 @@ model RoleSchema {
   schema Json
 
   roles        Role[]
-  discipline   Discipline @relation(fields: [disciplineId], references: [id])
+  discipline   Discipline      @relation(fields: [disciplineId], references: [id])
   disciplineId Int
+  visual       VisualElement[]
 }
 
 model Team {
@@ -95,18 +98,18 @@ model Participant {
   firstName String
   lastName  String
   gender    Gender
+  relevance Job
 
-  group    Group  @relation(fields: [groupId], references: [id])
-  groupId  Int
-  roles    Role[]
+  group   Group  @relation(fields: [groupId], references: [id])
+  groupId Int
+  roles   Role[]
 }
 
 model Role {
-  id         Int    @id @default(autoincrement())
-  pid        String @unique @default(dbgenerated("gen_random"))
-  name       String //e.g. runner, swimmer,...
-  importance Job
-  score      String
+  id    Int    @id @default(autoincrement())
+  pid   String @unique @default(dbgenerated("gen_random"))
+  name  String //e.g. runner, swimmer,...
+  score String
 
   participant   Participant? @relation(fields: [participantId], references: [id])
   participantId Int?
@@ -138,6 +141,17 @@ model Group {
   participants   Participant[]
   link           Link?
   admins         Admin[]
+}
+
+model VisualElement {
+  id          Int    @id @default(autoincrement())
+  pid         String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  description String
+  location    String
+
+  event      Event[]
+  discipline Discipline[]
+  role       RoleSchema[]
 }
 
 enum AdminLevel {

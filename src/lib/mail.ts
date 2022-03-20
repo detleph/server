@@ -5,9 +5,23 @@ import SMTPTransport from "nodemailer/lib/smtp-transport";
 import mjml from "./mjml"
 
 
-let mailAccount = { user: process.env.MAILUSER + "@mail." + process.env.DOMAIN, pass: process.env.MAILPASSWORD };
+export let mailAccount = { user: process.env.MAILUSER + "@mail." + process.env.DOMAIN, pass: process.env.MAILPASSWORD };
 
-let transporter = nodemailer.createTransport(
+let transporter = (process.env.DEV == "true" || process.env.DOMAIN == undefined) ?  (async () => {
+  mailAccount = await nodemailer.createTestAccount();
+  if (process.env.NODE_ENV != "test") {
+    console.log(mailAccount);
+  }
+  return nodemailer.createTransport({
+    host: "smtp.ethereal.email",
+    port: 587,
+    secure: false, // true for 465, false for other ports
+    auth: {
+      user: mailAccount.user, // generated ethereal user
+      pass: mailAccount.pass, // generated ethereal password
+    },
+  });
+})() : nodemailer.createTransport(
   new SMTPTransport({
     host: "localhost",
     port: 587,
@@ -23,26 +37,8 @@ let transporter = nodemailer.createTransport(
   })
 );
 
-if (process.env.DEV == "true") {
-  (async () => {
-    mailAccount = await nodemailer.createTestAccount();
-    if (process.env.NODE_ENV != "test") {
-      console.log(mailAccount);
-    }
-    transporter = nodemailer.createTransport({
-      host: "smtp.ethereal.email",
-      port: 587,
-      secure: false, // true for 465, false for other ports
-      auth: {
-        user: mailAccount.user, // generated ethereal user
-        pass: mailAccount.pass, // generated ethereal password
-      },
-    });
-  })();
-}
-
 const sendMail = async (from: string, to: string, subject: string, text?: string, html?: string) => {
-  return await transporter.sendMail({
+  return await (await transporter).sendMail({
     from: from,
     to: to,
     subject: subject,
@@ -51,7 +47,7 @@ const sendMail = async (from: string, to: string, subject: string, text?: string
   });
 };
 
-const verificationMail = async (to: string, ) => {
+export const verificationMail = async (to: string, ) => {
   const message = mjml.getTemplate("emailVerification")
  
   //TODO: replace handlebars with code
@@ -61,4 +57,4 @@ const verificationMail = async (to: string, ) => {
   sendMail(mailAccount.user,to,"Verify Email",undefined,message);
 }
 
-export default { sendMail, mailAccount };
+export default { sendMail};

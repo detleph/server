@@ -31,10 +31,10 @@ async function main() {
     if (err) {
       res.status(400).send({
         type: "error",
-        payload: "The body of your request did not contain valid data"
-      })
+        payload: "The body of your request did not contain valid data",
+      });
     } else {
-      next()
+      next();
     }
   });
 

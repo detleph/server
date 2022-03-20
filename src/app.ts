@@ -1,4 +1,4 @@
-import express from "express";
+import express, { ErrorRequestHandler, NextFunction, Request, Response } from "express";
 import prisma from "./lib/prisma";
 import eventRouter from "./Routes/event.routes";
 import adminAuthRouter from "./Routes/admin_auth.routes";
@@ -26,6 +26,17 @@ async function main() {
   // Bodyparser and urlencoded to parse post request bodies
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
+
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    if (err) {
+      res.status(400).send({
+        type: "error",
+        payload: "The body of your request did not contain valid data"
+      })
+    } else {
+      next()
+    }
+  });
 
   // Admin authentication endpoints
   app.use("/api/authentication", adminAuthRouter);

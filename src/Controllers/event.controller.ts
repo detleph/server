@@ -57,7 +57,7 @@ export const getEvent = async (req: Request, res: Response) => {
       res.status(500).json({
         type: "error",
         payload: {
-          message: "Unknown error occured with your request. Check if your parameters are correct",
+          message: "Unknown error occurred with your request. Check if your parameters are correct",
           shema: {
             eventId: DataType.UUID,
           },
@@ -70,14 +70,8 @@ export const getEvent = async (req: Request, res: Response) => {
 
 export const addEvent = async (req: Request, res: Response) => {
   if (
-    req.body.name == null ||
-    undefined ||
     typeof req.body.name !== "string" ||
-    req.body.date == null ||
-    undefined ||
     typeof req.body.date !== "string" ||
-    req.body.description == null ||
-    undefined ||
     typeof req.body.description !== "string"
   ) {
     res.status(400).json(
@@ -103,6 +97,7 @@ export const addEvent = async (req: Request, res: Response) => {
       date: true,
       pid: true,
       id: false,
+      description: true,
     },
   });
 

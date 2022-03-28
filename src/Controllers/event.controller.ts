@@ -20,10 +20,10 @@ export const getAllEvents = async (req: Request, res: Response) => {
 export const getEvent = async (req: Request, res: Response) => {
   const eventId = req.params.eventId;
 
-  if (eventId === undefined || null) {
+  if (typeof eventId !== "string") {
     res.status(400).json(
       generateInvalidBodyError({
-        eventId: DataType.STRING,
+        eventId: DataType.UUID,
       })
     );
     return;
@@ -58,7 +58,7 @@ export const getEvent = async (req: Request, res: Response) => {
         type: "error",
         payload: {
           message: "Unknown error occurred with your request. Check if your parameters are correct",
-          shema: {
+          schema: {
             eventId: DataType.UUID,
           },
         },

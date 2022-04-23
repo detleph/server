@@ -107,7 +107,7 @@ model Participant {
 
 model Role {
   id    Int    @id @default(autoincrement())
-  pid   String @unique @default(dbgenerated("gen_random"))
+  pid   String @unique @default(dbgenerated("gen_random_uuid()"))
   score String
 
   participant   Participant? @relation(fields: [participantId], references: [id], onDelete: SetNull)

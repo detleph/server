@@ -5,6 +5,10 @@ import { AUTH_ERROR, createInsufficientPermissionsError, DataType, generateInval
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import { Prisma } from "@prisma/client";
 
+function validateOranisationName(name: string) {
+  return name.length > 0;
+}
+
 const detailedOrganisation = {
   pid: true,
   name: true,
@@ -127,6 +131,15 @@ export const createOrganisation = async (
     return res.status(400).json(generateInvalidBodyError({ name: DataType.STRING, eventId: DataType.UUID }));
   }
 
+  if (!validateOranisationName(name)) {
+    return res.status(400).json({
+      type: "error",
+      payload: {
+        message: "The name has to be at least 1 character long",
+      },
+    });
+  }
+
   // Check if event exists
 
   try {
@@ -184,7 +197,7 @@ export const updateOrganisation = async (
   const { pid } = req.params;
   const { name } = req.body;
 
-  if (name && typeof name !== "string") {
+  if (name !== undefined && typeof name !== "string") {
     return res.status(400).json(
       generateInvalidBodyError({
         name: DataType.STRING,
@@ -192,16 +205,38 @@ export const updateOrganisation = async (
     );
   }
 
-  const organisation = await prisma.organisation.update({
-    where: { pid },
-    data: { name },
-    select: detailedOrganisation,
-  });
+  if (name !== undefined && !validateOranisationName(name)) {
+    return res.status(400).json({
+      type: "error",
+      payload: {
+        message: "The name has to be at least 1 character long",
+      },
+    });
+  }
 
-  return res.status(200).json({
-    type: "success",
-    payload: {
-      organisation,
-    },
-  });
+  try {
+    const organisation = await prisma.organisation.update({
+      where: { pid },
+      data: { name },
+      select: detailedOrganisation,
+    });
+
+    return res.status(200).json({
+      type: "success",
+      payload: {
+        organisation,
+      },
+    });
+  } catch (e) {
+    if (e instanceof PrismaClientKnownRequestError) {
+      if (e.code === "P2025") {
+        return res.status(404).json({
+          type: "error",
+          payload: {
+            message: `The organiation with the ID '${pid}' could not be found!`,
+          },
+        });
+      }
+    }
+  }
 };

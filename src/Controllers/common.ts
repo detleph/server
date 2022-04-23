@@ -1,3 +1,5 @@
+import { AdminLevel } from "@prisma/client";
+
 export enum DataType {
   STRING = "string",
   NUMBER = "number",
@@ -20,3 +22,25 @@ export function generateInvalidBodyError(body: Body) {
     },
   };
 }
+
+export const AUTH_ERROR = {
+  type: "failure",
+  payload: {
+    message: "The server was not able to validate your credentials; Please try again later",
+  },
+};
+
+export const createInsufficientPermissionsError = (required: AdminLevel = "ELEVATED") => ({
+  type: "error",
+  payload: {
+    message: "You do not have sufficient permissions to use this feature",
+    required_level: required,
+  },
+  _links: [
+    {
+      rel: "authentication",
+      href: "/api/authentication",
+      type: "POST",
+    },
+  ],
+});

@@ -3,9 +3,9 @@ import { Request, Response } from "express";
 import prisma from "../lib/prisma";
 import { AUTH_ERROR, createInsufficientPermissionsError, DataType, generateInvalidBodyError } from "./common";
 
-export const _getAllOrganisations = async (res: Response, eventId: number | undefined = undefined) => {
+export const _getAllOrganisations = async (res: Response, eventId: string | undefined = undefined) => {
   const organisations = await prisma.organisation.findMany({
-    where: { eventId },
+    where: { event: { pid: eventId } },
     select: { pid: true, name: true, event: { select: { pid: true, name: true } } },
   });
 
@@ -22,9 +22,19 @@ interface GetAllOrganisationsSearchParams {
 }
 
 export const getAllOrganisations = async (req: Request<{}, {}, {}, GetAllOrganisationsSearchParams>, res: Response) => {
-  const eventId = parseInt(req.query.eventId || "");
+  // TODO: Maybe rename to eventPid
+  return _getAllOrganisations(res, req.query.eventId);
+};
 
-  return _getAllOrganisations(res, isNaN(eventId) ? undefined : eventId);
+interface GetAllOrganisationsWithParamQueryParams {
+  eventPid: string;
+}
+
+export const getAllOrganisationsWithParam = async (
+  req: Request<GetAllOrganisationsWithParamQueryParams>,
+  res: Response
+) => {
+  return _getAllOrganisations(res, req.params.eventPid);
 };
 
 interface GetOrganisationQueryParams {

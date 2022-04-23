@@ -44,3 +44,19 @@ export const createInsufficientPermissionsError = (required: AdminLevel = "ELEVA
     },
   ],
 });
+
+export const generateError = (message: string) => {
+  return {
+    type: "error",
+    payload: {
+      message,
+    },
+  };
+};
+
+export const genericError = {
+  type: "error",
+  payload: {
+    message: "There was an error processing your request, please try again later",
+  },
+};

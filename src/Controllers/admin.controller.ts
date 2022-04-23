@@ -2,7 +2,7 @@ import prisma from "../lib/prisma";
 import { Request, Response } from "express";
 import { AdminLevel } from "@prisma/client";
 import argon2 from "argon2";
-import { DataType, generateInvalidBodyError } from "./common";
+import { AUTH_ERROR, createInsufficientPermissionsError, DataType, generateInvalidBodyError } from "./common";
 import { authClient } from "../lib/redis";
 
 export const regenerateRevision = async (pid: string) => {
@@ -15,28 +15,6 @@ export const regenerateRevision = async (pid: string) => {
 
   await authClient.set(pid, revision.toISOString());
 };
-
-const AUTH_ERROR = {
-  type: "failure",
-  payload: {
-    message: "The server was not able to validate your credentials; Please try again later",
-  },
-};
-
-const createInsufficientPermissionsError = (required: AdminLevel = "ELEVATED") => ({
-  type: "error",
-  payload: {
-    message: "You do not have sufficient permissions to use this feature",
-    required_level: required,
-  },
-  _links: [
-    {
-      rel: "authentication",
-      href: "/api/authentication",
-      type: "POST",
-    },
-  ],
-});
 
 // requires: auth(elevated)
 export const getAllAdmins = async (req: Request, res: Response) => {

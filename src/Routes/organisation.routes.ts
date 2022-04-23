@@ -5,6 +5,7 @@ import {
   getAllOrganisations,
   getAllOrganisationsWithParam,
   getOrganisation,
+  updateOrganisation,
 } from "../Controllers/organisation.controller";
 import { requireAuthentication } from "../Middleware/auth/auth";
 
@@ -12,6 +13,7 @@ const router = express.Router();
 
 router.get("/", getAllOrganisations);
 router.get("/:pid", getOrganisation);
+router.put<"/:pid", { pid: string }>("/:pid", requireAuthentication, updateOrganisation);
 
 eventRouter.get("/:eventPid/organisations", getAllOrganisationsWithParam);
 eventRouter.post<"/:eventPid/organisations", { eventPid: string }>(

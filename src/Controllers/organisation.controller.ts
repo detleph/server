@@ -3,17 +3,28 @@ import { Request, Response } from "express";
 import prisma from "../lib/prisma";
 import { AUTH_ERROR, createInsufficientPermissionsError, DataType, generateInvalidBodyError } from "./common";
 
-export const getAllOrganisations = async (req: Request, res: Response) => {
+export const _getAllOrganisations = async (res: Response, eventId: number | undefined = undefined) => {
   const organisations = await prisma.organisation.findMany({
+    where: { eventId },
     select: { pid: true, name: true, event: { select: { pid: true, name: true } } },
   });
 
-  res.status(200).json({
+  return res.status(200).json({
     type: "success",
     payload: {
       organisations,
     },
   });
+};
+
+interface GetAllOrganisationsSearchParams {
+  eventId?: string;
+}
+
+export const getAllOrganisations = async (req: Request<{}, {}, {}, GetAllOrganisationsSearchParams>, res: Response) => {
+  const eventId = parseInt(req.query.eventId || "");
+
+  return _getAllOrganisations(res, isNaN(eventId) ? undefined : eventId);
 };
 
 interface GetOrganisationQueryParams {

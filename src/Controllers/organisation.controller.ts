@@ -2,11 +2,37 @@ import { PrismaClientUnknownRequestError } from "@prisma/client/runtime";
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
 import { AUTH_ERROR, createInsufficientPermissionsError, DataType, generateInvalidBodyError } from "./common";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
+import { Prisma } from "@prisma/client";
+
+const detailedOrganisation = {
+  pid: true,
+  name: true,
+  event: {
+    select: {
+      pid: true,
+      name: true,
+      date: true,
+      description: true,
+    },
+  },
+} as const;
+
+const basicOrganisation = {
+  pid: true,
+  name: true,
+  event: {
+    select: {
+      pid: true,
+      name: true,
+    },
+  },
+} as const;
 
 export const _getAllOrganisations = async (res: Response, eventId: string | undefined = undefined) => {
   const organisations = await prisma.organisation.findMany({
     where: { event: { pid: eventId } },
-    select: { pid: true, name: true, event: { select: { pid: true, name: true } } },
+    select: basicOrganisation,
   });
 
   return res.status(200).json({
@@ -46,7 +72,7 @@ export const getOrganisation = async (req: Request<GetOrganisationQueryParams>, 
 
   const organisation = await prisma.organisation.findUnique({
     where: { pid },
-    select: { pid: true, name: true, event: { select: { pid: true, date: true, name: true, description: true } } },
+    select: detailedOrganisation,
   });
 
   if (!organisation) {
@@ -104,7 +130,7 @@ export const createOrganisation = async (
   // Check if event exists
 
   try {
-    const event = await prisma.event.findUnique({ where: { pid: eventPid } });
+    const event = await prisma.event.findUnique({ where: { pid: eventPid }, select: { id: true } });
 
     if (!event) {
       return res.status(404).json({
@@ -126,7 +152,56 @@ export const createOrganisation = async (
     }
   }
 
-  const organisation = await prisma.organisation.create({ data: { name, event: { connect: { pid: eventPid } } } });
+  const organisation = await prisma.organisation.create({
+    data: { name, event: { connect: { pid: eventPid } } },
+    select: detailedOrganisation,
+  });
 
   res.status(201).json({ type: "success", payload: { organisation } });
+};
+
+interface UpdateOrganisationQueryParams {
+  pid: string;
+}
+
+interface UpdateOrganisationBody {
+  name?: string;
+}
+
+// requires: auth(ELEVATED)
+export const updateOrganisation = async (
+  req: Request<UpdateOrganisationQueryParams, {}, UpdateOrganisationBody>,
+  res: Response
+) => {
+  if (!req.auth?.isAuthenticated) {
+    return res.status(500).json(AUTH_ERROR);
+  }
+
+  if (req.auth.permission_level !== "ELEVATED") {
+    return res.status(403).json(createInsufficientPermissionsError());
+  }
+
+  const { pid } = req.params;
+  const { name } = req.body;
+
+  if (name && typeof name !== "string") {
+    return res.status(400).json(
+      generateInvalidBodyError({
+        name: DataType.STRING,
+      })
+    );
+  }
+
+  const organisation = await prisma.organisation.update({
+    where: { pid },
+    data: { name },
+    select: detailedOrganisation,
+  });
+
+  return res.status(200).json({
+    type: "success",
+    payload: {
+      organisation,
+    },
+  });
 };

@@ -50,7 +50,7 @@ export const authenticateUser = async (req: Request<{}, {}, AuthenticateUserBody
   //         with only the username
 
   if (!user) {
-    return res.status(404).json({
+    return res.status(403).json({
       type: "error",
       payload: {
         message: `The provided credentials are not valid`,

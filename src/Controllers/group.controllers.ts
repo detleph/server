@@ -1,3 +1,4 @@
+import { Admin } from "@prisma/client";
 import { PrismaClientUnknownRequestError } from "@prisma/client/runtime";
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
@@ -47,15 +48,23 @@ export const getGroup = async (req: Request<GetGroupQueryParams>, res: Response)
   const { pid } = req.params;
 
   try {
-    const group = await prisma.group.findUnique({
+    const group: {
+      pid: string;
+      name: string;
+      oragnisation: { pid: string; name: string };
+      admins?: { pid: string; name: string }[];
+      participants?: { pid: string }[];
+    } | null = await prisma.group.findUnique({
       where: { pid },
-      select: {
-        pid: true,
-        name: true,
-        oragnisation: { select: { pid: true, name: true } },
-        admins: { select: { pid: true, name: true } },
-        participants: { select: { pid: true } },
-      },
+      select: req.auth?.isAuthenticated
+        ? {
+            pid: true,
+            name: true,
+            oragnisation: { select: { pid: true, name: true } },
+            admins: { select: { pid: true, name: true } },
+            participants: { select: { pid: true } },
+          }
+        : basicGroup,
     });
 
     if (!group) {
@@ -71,14 +80,18 @@ export const getGroup = async (req: Request<GetGroupQueryParams>, res: Response)
             ...group.oragnisation,
             _links: [{ rel: "self", type: "GET", href: `/api/organisation/${group.oragnisation.pid}` }],
           },
-          admins: group.admins.map((admin) => ({
-            ...admin,
-            _links: [{ rel: "self", type: "GET", href: `/api/admins/${admin.pid}` }],
-          })),
-          participants: group.participants.map((participant) => ({
-            ...participant,
-            _links: [{ rel: "self", type: "GET", href: `/api/participant/${participant.pid}` }],
-          })),
+          ...(req.auth?.isAuthenticated
+            ? {
+                admins: group.admins?.map((admin) => ({
+                  ...admin,
+                  _links: [{ rel: "self", type: "GET", href: `/api/admins/${admin.pid}` }],
+                })),
+                participants: group.participants?.map((participant) => ({
+                  ...participant,
+                  _links: [{ rel: "self", type: "GET", href: `/api/participant/${participant.pid}` }],
+                })),
+              }
+            : {}),
         },
       },
     });

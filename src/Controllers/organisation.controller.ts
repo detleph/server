@@ -1,7 +1,14 @@
 import { PrismaClientUnknownRequestError } from "@prisma/client/runtime";
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
-import { AUTH_ERROR, createInsufficientPermissionsError, DataType, generateInvalidBodyError } from "./common";
+import {
+  AUTH_ERROR,
+  createInsufficientPermissionsError,
+  DataType,
+  generateError,
+  generateInvalidBodyError,
+  genericError,
+} from "./common";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import { Prisma } from "@prisma/client";
 
@@ -230,13 +237,45 @@ export const updateOrganisation = async (
   } catch (e) {
     if (e instanceof PrismaClientKnownRequestError) {
       if (e.code === "P2025") {
-        return res.status(404).json({
-          type: "error",
-          payload: {
-            message: `The organiation with the ID '${pid}' could not be found!`,
-          },
-        });
+        return res.status(404).json(generateError(`The organisation with the ID ${pid} could not be found`));
       }
+    } else if (e instanceof PrismaClientUnknownRequestError) {
+      return res.status(400).send(generateError("Unkonwn error occured. This could be due to malformed IDs"));
     }
   }
+
+  return res.status(500).json(genericError);
+};
+
+interface DeleteOrganisationQueryParams {
+  pid: string;
+}
+
+// requires: auth(ELEVATED)
+export const deleteOrganisation = async (req: Request<DeleteOrganisationQueryParams>, res: Response) => {
+  if (!req.auth?.isAuthenticated) {
+    return res.status(500).json(AUTH_ERROR);
+  }
+
+  if (req.auth.permission_level !== "ELEVATED") {
+    return res.status(403).json(createInsufficientPermissionsError());
+  }
+
+  const { pid } = req.params;
+
+  try {
+    prisma.organisation.delete({ where: { pid } });
+
+    res.status(204).end();
+  } catch (e) {
+    if (e instanceof PrismaClientKnownRequestError) {
+      if ((e.code = "P2025")) {
+        return res.status(404).json(generateError(`The organisation with the ID ${pid} could not be found`));
+      }
+    } else if (e instanceof PrismaClientUnknownRequestError) {
+      return res.status(400).send(generateError("Unkonwn error occured. This could be due to malformed IDs"));
+    }
+  }
+
+  return res.status(500).json(genericError);
 };

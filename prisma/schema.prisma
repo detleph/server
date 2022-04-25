@@ -101,6 +101,8 @@ model Participant {
   email     String
   gender    Gender
 
+  verified  Boolean @default(false)
+
   group    Group  @relation(fields: [groupId], references: [id])
   groupId  Int
   team     Team   @relation(name: "participants", fields: [teamId], references: [id])

@@ -1,6 +1,6 @@
 import { writeFile } from "fs";
 import Handlebars, { template } from "handlebars";
-import { emailClient } from "./redis";
+import { mailClient } from "./redis";
 import nodemailer from "nodemailer";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
 
@@ -64,9 +64,6 @@ export const verificationMail = async (to: string, eventName: string, verificati
   const compiled = message(data);
 
   sendMail(mailAccount.user, to, "Verify Email", undefined, compiled);
-
-  //TODO: Implement verification codes
-  //TODO: Write endpoints to verify codes
 };
 
 export default { sendMail };

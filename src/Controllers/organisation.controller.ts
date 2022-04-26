@@ -8,6 +8,7 @@ import {
   generateError,
   generateInvalidBodyError,
   genericError,
+  handleCreateByName,
 } from "./common";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import { Prisma } from "@prisma/client";
@@ -123,61 +124,12 @@ export const createOrganisation = async (
   req: Request<CreateOrganisationQueryParams, {}, CreateOrganisationBody>,
   res: Response
 ) => {
-  if (!req.auth?.isAuthenticated) {
-    return res.status(500).json(AUTH_ERROR);
-  }
-
-  if (req.auth.permission_level !== "ELEVATED") {
-    return res.status(403).json(createInsufficientPermissionsError());
-  }
-
-  const { name } = req.body || {};
-  const { eventPid } = req.params;
-
-  if (typeof name !== "string") {
-    return res.status(400).json(generateInvalidBodyError({ name: DataType.STRING, eventId: DataType.UUID }));
-  }
-
-  if (!validateOranisationName(name)) {
-    return res.status(400).json({
-      type: "error",
-      payload: {
-        message: "The name has to be at least 1 character long",
-      },
-    });
-  }
-
-  // Check if event exists
-
-  try {
-    const event = await prisma.event.findUnique({ where: { pid: eventPid }, select: { id: true } });
-
-    if (!event) {
-      return res.status(404).json({
-        type: "error",
-        payload: {
-          message: `The event with the ID ${eventPid} could not be found`,
-        },
-      });
-    }
-  } catch (e) {
-    // REVIEW: Check for valid UUID
-    if (e instanceof PrismaClientUnknownRequestError) {
-      return res.status(400).send({
-        type: "error",
-        payload: {
-          message: "Unknown error occured. This could be to malformed IDs",
-        },
-      });
-    }
-  }
-
-  const organisation = await prisma.organisation.create({
-    data: { name, event: { connect: { pid: eventPid } } },
-    select: detailedOrganisation,
-  });
-
-  res.status(201).json({ type: "success", payload: { organisation } });
+  return handleCreateByName(
+    { type: "oragnisation", data: { name: req.body.name } },
+    { type: "event", id: req.params.eventPid },
+    req,
+    res
+  );
 };
 
 interface UpdateOrganisationQueryParams {

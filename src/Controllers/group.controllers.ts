@@ -2,7 +2,7 @@ import { Admin } from "@prisma/client";
 import { PrismaClientUnknownRequestError } from "@prisma/client/runtime";
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
-import { generateError, genericError } from "./common";
+import { generateError, genericError, handleCreateByName } from "./common";
 
 const basicGroup = {
   pid: true,
@@ -102,4 +102,15 @@ export const getGroup = async (req: Request<GetGroupQueryParams>, res: Response)
   }
 
   return res.status(500).json(genericError);
+};
+
+// at: POST /api/organisations/:eventPid/groups
+// requires: auth(ELEVATED)
+export const createGroup = async (req: Request<{ organisationPid: string }, {}, { name?: string }>, res: Response) => {
+  return handleCreateByName(
+    { type: "group", data: { name: req.body.name, level: 1 } },
+    { type: "oragnisation", id: req.params.organisationPid },
+    req,
+    res
+  );
 };

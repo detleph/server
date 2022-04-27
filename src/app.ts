@@ -6,6 +6,10 @@ import argon2 from "argon2";
 import adminRouter from "./Routes/admin.routes";
 import organisationRouter from "./Routes/organisation.routes";
 import groupRouter from "./Routes/group.routes";
+import defaultErrorHandler from "./Middleware/error/handler";
+
+// Set up async error handling
+require("express-async-errors");
 
 require("dotenv").config(); // Load dotenv config
 
@@ -51,6 +55,9 @@ async function main() {
   app.use("/api/organisations", organisationRouter);
 
   app.use("/api/groups", groupRouter);
+
+  // Error handling
+  app.use(defaultErrorHandler);
 
   app.listen(process.env.PORT, () => {
     console.log(`Listening on Port: ${process.env.PORT}`);

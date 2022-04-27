@@ -7,12 +7,12 @@ import { generateError, genericError, handleCreateByName } from "./common";
 const basicGroup = {
   pid: true,
   name: true,
-  oragnisation: { select: { pid: true, name: true } },
+  organisation: { select: { pid: true, name: true } },
 } as const;
 
 export const _getAllGroups = async (res: Response, organisationId: string | undefined) => {
   const groups = await prisma.group.findMany({
-    where: { oragnisation: { pid: organisationId } },
+    where: { organisation: { pid: organisationId } },
     select: basicGroup,
   });
 
@@ -51,7 +51,7 @@ export const getGroup = async (req: Request<GetGroupQueryParams>, res: Response)
     const group: {
       pid: string;
       name: string;
-      oragnisation: { pid: string; name: string };
+      organisation: { pid: string; name: string };
       admins?: { pid: string; name: string }[];
       participants?: { pid: string }[];
     } | null = await prisma.group.findUnique({
@@ -60,7 +60,7 @@ export const getGroup = async (req: Request<GetGroupQueryParams>, res: Response)
         ? {
             pid: true,
             name: true,
-            oragnisation: { select: { pid: true, name: true } },
+            organisation: { select: { pid: true, name: true } },
             admins: { select: { pid: true, name: true } },
             participants: { select: { pid: true } },
           }
@@ -77,8 +77,8 @@ export const getGroup = async (req: Request<GetGroupQueryParams>, res: Response)
         group: {
           ...group,
           organisation: {
-            ...group.oragnisation,
-            _links: [{ rel: "self", type: "GET", href: `/api/organisation/${group.oragnisation.pid}` }],
+            ...group.organisation,
+            _links: [{ rel: "self", type: "GET", href: `/api/organisation/${group.organisation.pid}` }],
           },
           ...(req.auth?.isAuthenticated
             ? {
@@ -109,7 +109,7 @@ export const getGroup = async (req: Request<GetGroupQueryParams>, res: Response)
 export const createGroup = async (req: Request<{ organisationPid: string }, {}, { name?: string }>, res: Response) => {
   return handleCreateByName(
     { type: "group", data: { name: req.body.name, level: 1 } },
-    { type: "oragnisation", id: req.params.organisationPid },
+    { type: "organisation", id: req.params.organisationPid },
     req,
     res
   );

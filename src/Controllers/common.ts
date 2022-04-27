@@ -72,20 +72,20 @@ type Organisation = Partial<Prisma.OrganisationCreateArgs["data"]>;
 type Group = Partial<Prisma.GroupCreateArgs["data"]>;
 
 export async function handleCreateByName(
-  create: { type: "oragnisation"; data: Organisation },
+  create: { type: "organisation"; data: Organisation },
   link: { type: "event"; id: string },
   req: Request<any>,
   res: Response
 ): Promise<unknown>;
 export async function handleCreateByName(
   create: { type: "group"; data: Group },
-  link: { type: "oragnisation"; id: string },
+  link: { type: "organisation"; id: string },
   req: Request<any>,
   res: Response
 ): Promise<unknown>;
 export async function handleCreateByName(
-  create: { type: "oragnisation" | "group"; data: Organisation | Group },
-  link: { type: "event" | "oragnisation"; id: string },
+  create: { type: "organisation" | "group"; data: Organisation | Group },
+  link: { type: "event" | "organisation"; id: string },
   req: Request<any>,
   res: Response
 ) {

@@ -125,7 +125,7 @@ export const createOrganisation = async (
   res: Response
 ) => {
   return handleCreateByName(
-    { type: "oragnisation", data: { name: req.body.name } },
+    { type: "organisation", data: { name: req.body.name } },
     { type: "event", id: req.params.eventPid },
     req,
     res

@@ -7,7 +7,9 @@ const {
 const defaultJsonFormat = combine(errors({ stack: true }), timestamp(), json({ space: 2 }));
 
 const customCLIFormat = printf(({ level, message, label, timestamp, stack }) => {
-  let output = `${level}${stack ? `(1/2:message)` : ""} at ${timestamp}${label ? ` (#${label})` : ""}: ${message}\n`;
+  let output = `${level}${stack ? `(1/2:message)` : ""} at ${timestamp}${label ? ` (#${label})` : ""}: ${message}${
+    stack ? "\n" : ""
+  }`;
 
   if (stack) {
     output += `\n${level}(2/2:stack)${label ? ` (#${label})` : ""}: ${stack}\n\n`;

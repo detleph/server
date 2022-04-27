@@ -1,6 +1,7 @@
 import { PrismaClientUnknownRequestError } from "@prisma/client/runtime";
 import { NextFunction, Request, Response } from "express";
 import ForwardableError from "./ForwardableError";
+import logger from "./logger";
 
 const env = process.env.NODE_ENV || "production";
 
@@ -20,6 +21,8 @@ export default function defaultErrorHandler(err: any, req: Request, res: Respons
   }
 
   if (err instanceof PrismaClientUnknownRequestError) {
+    logger.warning(err);
+
     return res.status(404).json({
       type: "error",
       payload: {

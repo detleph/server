@@ -7,6 +7,7 @@ import adminRouter from "./Routes/admin.routes";
 import organisationRouter from "./Routes/organisation.routes";
 import groupRouter from "./Routes/group.routes";
 import defaultErrorHandler from "./Middleware/error/handler";
+import logger from "./Middleware/error/logger";
 
 // Set up async error handling
 require("express-async-errors");
@@ -60,8 +61,10 @@ async function main() {
   app.use(defaultErrorHandler);
 
   app.listen(process.env.PORT, () => {
-    console.log(`Listening on Port: ${process.env.PORT}`);
+    logger.info(`Listening on port ${process.env.PORT}`);
   });
+
+  logger.info("Server started");
 }
 
 main()

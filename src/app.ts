@@ -6,6 +6,7 @@ import argon2 from "argon2";
 import adminRouter from "./Routes/admin.routes";
 import organisationRouter from "./Routes/organisation.routes";
 import groupRouter from "./Routes/group.routes";
+import disciplineRouter from "./Routes/discipline.routes";
 import defaultErrorHandler from "./Middleware/error/handler";
 import logger from "./Middleware/error/logger";
 import debugLogger from "./Middleware/debug/logger";
@@ -53,8 +54,10 @@ async function main() {
 
   app.use("/api/groups", groupRouter);
 
+  app.use("/api/disciplines", disciplineRouter);
+
   // Error handling
-  app.use(defaultErrorHandler);
+  app.use(defaultErrorHandler); // Not working
 
   app.listen(process.env.PORT, () => {
     logger.info(`Listening on port ${process.env.PORT}`);

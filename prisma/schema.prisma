@@ -134,9 +134,9 @@ model Group {
   name       String
   user_limit Int    @default(40)
   level      Int
+  organisation   Organisation  @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  organisationId Int
 
-  oragnisation   Organisation  @relation(fields: [oragnisationId], references: [id], onDelete: Cascade)
-  oragnisationId Int
   participants   Participant[]
   link           Link?
   admins         Admin[]

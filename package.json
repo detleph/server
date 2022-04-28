@@ -30,7 +30,8 @@
     "express-async-errors": "^3.1.1",
     "jsonwebtoken": "^8.5.1",
     "nodemailer": "^6.7.0",
-    "redis": "^3.1.2"
+    "redis": "^3.1.2",
+    "winston": "^3.7.2"
   },
   "devDependencies": {
     "@types/chai": "^4.2.22",

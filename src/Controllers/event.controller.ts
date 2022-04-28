@@ -13,8 +13,13 @@ export const getAllEvents = async (req: Request, res: Response) => {
       id: false,
     },
   });
-  if (events.length > 0) res.status(200).json(events);
-  else res.status(200).json([]);
+  if (events.length > 0)
+    res.status(200).json({
+      type: "success",
+      payload: {
+        events,
+      },
+    });
 };
 
 export const getEvent = async (req: Request, res: Response) => {
@@ -42,7 +47,12 @@ export const getEvent = async (req: Request, res: Response) => {
       },
     });
 
-    res.status(200).json(event);
+    res.status(200).json({
+      type: "success",
+      payload: {
+        event,
+      },
+    });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError) {
       res.status(500).json({
@@ -102,7 +112,7 @@ export const addEvent = async (req: Request, res: Response) => {
   });
 
   res.status(201).json({
-    type: "succes",
+    type: "success",
     payload: {
       event,
     },

@@ -34,17 +34,6 @@ async function main() {
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
 
-  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-    if (err) {
-      res.status(400).send({
-        type: "error",
-        payload: "The body of your request did not contain valid data",
-      });
-    } else {
-      next();
-    }
-  });
-
   // Admin authentication endpoints
   app.use("/api/authentication", adminAuthRouter);
 
@@ -65,10 +54,15 @@ async function main() {
   });
 
   logger.info("Server started");
+
+  process.on("exit", () => {
+    logger.info("Server stopping...");
+  });
 }
 
 main()
   .catch((e) => {
+    logger.crit(e);
     throw e;
   })
   .finally(async () => {

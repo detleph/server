@@ -79,20 +79,24 @@ export const getEvent = async (req: Request, res: Response) => {
   }
 };
 
+// requires: auth(ELEVATED)
 export const addEvent = async (req: Request, res: Response) => {
+  if (req.auth?.permission_level !== "ELEVATED") {
+    res.status(403).json(createInsufficientPermissionsError());
+  }
+
   if (
     typeof req.body.name !== "string" ||
     typeof req.body.date !== "string" ||
     typeof req.body.description !== "string"
   ) {
-    res.status(400).json(
+    return res.status(400).json(
       generateInvalidBodyError({
         name: DataType.STRING,
         date: DataType.DATETIME,
         description: DataType.STRING,
       })
     );
-    return;
   }
 
   //TODO: Check if date is valid

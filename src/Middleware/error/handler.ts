@@ -5,7 +5,34 @@ import logger from "./logger";
 
 const env = process.env.NODE_ENV || "production";
 
+type ErrorHandler = (err: any, req: Request, res: Response) => boolean;
+
+const customHandlers: ErrorHandler[] = [];
+
+export function addCustomHandler(handler: ErrorHandler) {
+  customHandlers.push(handler);
+}
+
+export function removeCustomHandler(handler: ErrorHandler): Boolean {
+  const index = customHandlers.findIndex((h) => h === handler);
+
+  if (index < 0) {
+    return false;
+  }
+
+  customHandlers.splice(index);
+
+  return true;
+}
+
 export default function defaultErrorHandler(err: any, req: Request, res: Response, next: NextFunction) {
+  for (const handler of customHandlers) {
+    // Run custom handler
+    if (handler(err, req, res)) {
+      return;
+    }
+  }
+
   if (ForwardableError.isForwardableError(err)) {
     return res.status(err.status).json({
       type: "error",
@@ -36,4 +63,20 @@ export default function defaultErrorHandler(err: any, req: Request, res: Respons
       },
     });
   }
+
+  logger.error("--- Unhandled error ---");
+  logger.error(err);
+
+  return res.status(err.status).json({
+    type: "error",
+    payload: {
+      message: err.message,
+      ...(env === "development"
+        ? {
+            notice: "This error was not caught by any handler, please add handling!",
+            stack: err.stack,
+          }
+        : {}),
+    },
+  });
 }

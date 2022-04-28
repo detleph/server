@@ -8,6 +8,7 @@ import organisationRouter from "./Routes/organisation.routes";
 import groupRouter from "./Routes/group.routes";
 import defaultErrorHandler from "./Middleware/error/handler";
 import logger from "./Middleware/error/logger";
+import debugLogger from "./Middleware/debug/logger";
 
 // Set up async error handling
 require("express-async-errors");
@@ -15,6 +16,10 @@ require("express-async-errors");
 require("dotenv").config(); // Load dotenv config
 
 const app = express();
+
+if (process.env.NODE_ENV === "development") {
+  logger.info("Using development mode");
+}
 
 async function main() {
   // Dev
@@ -33,6 +38,8 @@ async function main() {
   // Bodyparser and urlencoded to parse post request bodies
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
+
+  app.use(debugLogger);
 
   // Admin authentication endpoints
   app.use("/api/authentication", adminAuthRouter);

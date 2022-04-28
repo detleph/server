@@ -1,7 +1,8 @@
 import { Prisma } from "@prisma/client";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
-import { DataType, generateInvalidBodyError } from "./common";
+import { createInsufficientPermissionsError, DataType, generateError, generateInvalidBodyError } from "./common";
 
 export const getAllEvents = async (req: Request, res: Response) => {
   const events = await prisma.event.findMany({
@@ -117,4 +118,29 @@ export const addEvent = async (req: Request, res: Response) => {
       event,
     },
   });
+};
+
+interface DeleteEventQueryParams {
+  pid: string;
+}
+
+// requires: auth(ELEVATED)
+export const deleteEvent = (req: Request<DeleteEventQueryParams>, res: Response) => {
+  if (req.auth?.permission_level !== "ELEVATED") {
+    res.status(403).json(createInsufficientPermissionsError());
+  }
+
+  const { pid } = req.params;
+
+  try {
+    prisma.event.delete({ where: { pid } });
+
+    return res.status(204).end();
+  } catch (e) {
+    if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
+      return res.status(404).json(generateError(`The organisation with the ID ${pid} could not be found`));
+    }
+
+    throw e;
+  }
 };

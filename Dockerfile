@@ -19,6 +19,7 @@ RUN npm i
 ADD prisma/ /app/prisma/
 ADD scripts/ /app/scripts/
 ADD src/ /app/src/
+ADD resources/ /app/resources
 COPY tsconfig.json /app/
 
 # Generate the prisma client

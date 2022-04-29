@@ -6,6 +6,6 @@ export default function debugLogger(req: Request, res: Response, next: NextFunct
   if (process.env.NODE_ENV === "development") {
     logger.debug(`Request to: ${req.url}`);
   }
-  
+
   next();
 }

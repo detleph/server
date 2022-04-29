@@ -1,5 +1,4 @@
 #!/bin/bash
-
 D_SERVICES="mail postgres redis"
 
 DATABASE_PASSWORD=server COMPOSE_PROJECT_NAME=detleph_server docker-compose up -d $D_SERVICES
@@ -49,12 +48,10 @@ if [ "$RECREATE" = true ]; then
         --name detleph_server_dev \
         --mount type=bind,source="$(pwd)",target=/app \
         --network detleph_server_default \
-        -p $D_PORT:$D_PORT -e PORT=$D_PORT \
         -e DATABASE_PASSWORD=server \
         -e DATABASE_URL="postgresql://server:server@postgres:5432/management?schema=public" \
         -e NODE_ENV="development" \
         --entrypoint "/app/scripts/docker-entrypoint.dev.sh" \
         node
 fi
-
 COMPOSE_PROJECT_NAME=detleph_server docker-compose stop

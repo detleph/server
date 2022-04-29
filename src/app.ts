@@ -1,9 +1,4 @@
-import express, {
-  ErrorRequestHandler,
-  NextFunction,
-  Request,
-  Response,
-} from "express";
+import express, { ErrorRequestHandler, NextFunction, Request, Response } from "express";
 import prisma from "./lib/prisma";
 import eventRouter from "./Routes/event.routes";
 import adminAuthRouter from "./Routes/admin_auth.routes";

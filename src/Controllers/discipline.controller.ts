@@ -1,7 +1,19 @@
 import { Prisma, Organisation, Admin, AdminLevel, Team } from "@prisma/client";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
 import ForwardableError from "../Middleware/error/ForwardableError";
+import NotFoundError from "../Middleware/error/NotFoundError";
+import {
+  createInsufficientPermissionsError,
+  DataType,
+  generateError,
+  generateInvalidBodyError,
+  NAME_ERROR,
+  validateName,
+} from "./common";
+
+require("express-async-errors");
 
 const basicDiscipline = {
   pid: true,
@@ -74,7 +86,7 @@ export const getDiscipline = async (req: Request<GetDisciplineQueryParams>, res:
   });
 
   if (!discipline) {
-    throw new ForwardableError(404, `The discipline with ID ${pid} could not be found`);
+    throw new NotFoundError("discipline", pid);
   }
 
   return res.status(200).json({
@@ -99,4 +111,54 @@ export const getDiscipline = async (req: Request<GetDisciplineQueryParams>, res:
       },
     },
   });
+};
+
+interface CreateDisciplineBody {
+  name?: string;
+  minTeamSize?: number;
+  maxTeamSize?: number;
+}
+
+// require: auth(ELEVATED)
+// at: POST /event/:eventPid/discipliens
+export const createDiscipline = async (req: Request<{ eventPid: string }, {}, CreateDisciplineBody>, res: Response) => {
+  if (req.auth?.permission_level !== "ELEVATED") {
+    return res.status(403).json(createInsufficientPermissionsError());
+  }
+
+  const { name, minTeamSize, maxTeamSize } = req.body;
+
+  if (typeof name !== "string" || typeof minTeamSize !== "number" || typeof maxTeamSize !== "number") {
+    return res.status(400).json(
+      generateInvalidBodyError({
+        name: DataType.STRING,
+        minTeamSize: DataType.NUMBER,
+        maxTeamSize: DataType.NUMBER,
+      })
+    );
+  }
+
+  if (!validateName(name)) {
+    return res.status(400).json(NAME_ERROR);
+  }
+
+  try {
+    const discipline = await prisma.discipline.create({
+      data: { name, minTeamSize, maxTeamSize, event: { connect: { pid: req.params.eventPid } } },
+      select: {
+        pid: true,
+        name: true,
+        minTeamSize: true,
+        maxTeamSize: true,
+        event: { select: { pid: true, name: true } },
+      },
+    });
+
+    return res.status(201).json({ type: "success", payload: { discipline } });
+  } catch (e) {
+    if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
+      return res.status(404).json(generateError(`Could not link to event with ID '${req.params.eventPid}'`));
+    }
+    throw e;
+  }
 };

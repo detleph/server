@@ -1,8 +1,13 @@
-import { Prisma } from "@prisma/client"
+import { Prisma } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
-import { createInsufficientPermissionsError, DataType, generateError, generateInvalidBodyError } from "./common";
+import {
+  createInsufficientPermissionsError,
+  DataType,
+  generateError,
+  generateInvalidBodyError,
+} from "./common";
 
 export const getAllEvents = async (req: Request, res: Response) => {
   const events = await prisma.event.findMany({
@@ -68,7 +73,8 @@ export const getEvent = async (req: Request, res: Response) => {
       res.status(500).json({
         type: "error",
         payload: {
-          message: "Unknown error occurred with your request. Check if your parameters are correct",
+          message:
+            "Unknown error occurred with your request. Check if your parameters are correct",
           schema: {
             eventId: DataType.UUID,
           },
@@ -78,7 +84,6 @@ export const getEvent = async (req: Request, res: Response) => {
     }
   }
 };
-
 
 // requires: auth(ELEVATED)
 export const addEvent = async (req: Request, res: Response) => {
@@ -90,12 +95,11 @@ export const addEvent = async (req: Request, res: Response) => {
     typeof req.body.date !== "string" ||
     typeof req.body.description !== "string"
   ) {
-      generateInvalidBodyError({
-        name: DataType.STRING,
-        date: DataType.DATETIME,
-        description: DataType.STRING,
-      })
-    );
+    generateInvalidBodyError({
+      name: DataType.STRING,
+      date: DataType.DATETIME,
+      description: DataType.STRING,
+    });
   }
 
   //TODO: Check if date is valid
@@ -128,7 +132,10 @@ interface DeleteEventQueryParams {
 }
 
 // requires: auth(ELEVATED)
-export const deleteEvent = (req: Request<DeleteEventQueryParams>, res: Response) => {
+export const deleteEvent = (
+  req: Request<DeleteEventQueryParams>,
+  res: Response
+) => {
   if (req.auth?.permission_level !== "ELEVATED") {
     res.status(403).json(createInsufficientPermissionsError());
   }
@@ -141,7 +148,13 @@ export const deleteEvent = (req: Request<DeleteEventQueryParams>, res: Response)
     return res.status(204).end();
   } catch (e) {
     if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
-      return res.status(404).json(generateError(`The organisation with the ID ${pid} could not be found`));
+      return res
+        .status(404)
+        .json(
+          generateError(
+            `The organisation with the ID ${pid} could not be found`
+          )
+        );
     }
 
     throw e;

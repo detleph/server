@@ -1,4 +1,9 @@
-import express, { ErrorRequestHandler, NextFunction, Request, Response } from "express";
+import express, {
+  ErrorRequestHandler,
+  NextFunction,
+  Request,
+  Response,
+} from "express";
 import prisma from "./lib/prisma";
 import eventRouter from "./Routes/event.routes";
 import adminAuthRouter from "./Routes/admin_auth.routes";
@@ -6,7 +11,6 @@ import argon2 from "argon2";
 import adminRouter from "./Routes/admin.routes";
 import organisationRouter from "./Routes/organisation.routes";
 import groupRouter from "./Routes/group.routes";
-
 
 require("dotenv").config(); // Load dotenv config
 

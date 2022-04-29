@@ -5,7 +5,7 @@ import mjml from "mjml";
 const template_folder = "/app/resources/email/templates/";
 
 const compileTemplates = () => {
-  console.log("Compiling templates: ")
+  console.log("Compiling templates: ");
 
   fs.readdir(template_folder, (err, files) => {
     if (err) console.log(err);

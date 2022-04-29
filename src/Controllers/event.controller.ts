@@ -19,13 +19,13 @@ export const getAllEvents = async (req: Request, res: Response) => {
       id: false,
     },
   });
-  if (events.length > 0)
-    res.status(200).json({
-      type: "success",
-      payload: {
-        events,
-      },
-    });
+
+  res.status(200).json({
+    type: "success",
+    payload: {
+      events,
+    },
+  });
 };
 
 export const getEvent = async (req: Request, res: Response) => {

@@ -1,5 +1,5 @@
 import { Prisma, Organisation, Admin, AdminLevel, Team } from "@prisma/client";
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
+import { PrismaClientKnownRequestError, PrismaClientUnknownRequestError } from "@prisma/client/runtime";
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
 import ForwardableError from "../Middleware/error/ForwardableError";
@@ -159,6 +159,31 @@ export const createDiscipline = async (req: Request<{ eventPid: string }, {}, Cr
     if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
       return res.status(404).json(generateError(`Could not link to event with ID '${req.params.eventPid}'`));
     }
+    throw e;
+  }
+};
+
+interface DeleteDisciplineQueryParams {
+  pid: string;
+}
+
+// requires: auth(ELEVATED)
+export const deleteDiscipline = async (req: Request<DeleteDisciplineQueryParams>, res: Response) => {
+  if (req.auth?.permission_level !== "ELEVATED") {
+    res.status(403).json(createInsufficientPermissionsError());
+  }
+
+  const { pid } = req.params;
+
+  try {
+    await prisma.discipline.delete({ where: { pid } });
+
+    return res.status(204).end();
+  } catch (e) {
+    if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
+      throw new NotFoundError("discipline", pid);
+    }
+
     throw e;
   }
 };

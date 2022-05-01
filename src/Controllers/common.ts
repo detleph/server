@@ -10,6 +10,7 @@ export enum DataType {
   PERMISSION_LEVEL = "'ELEVATED' | 'STANDARD'",
   DATETIME = "ISOstring",
   UUID = "string",
+  RESULT_SCHEMA = "result_schema",
 }
 
 interface Body {

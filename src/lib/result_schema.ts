@@ -52,7 +52,7 @@ export function parseSchema(schema: any): DurationSchemaT | PointSchemaT {
       const issue = e.issues.at(0);
 
       if (issue) {
-        throw new SchemaError(`${issue.path}: ${issue.message}`);
+        throw new SchemaError(`Error with the schema: ${issue.path ? `${issue.path}:` : ""} ${issue.message}`);
       }
 
       throw new SchemaError("Unknown error occured while validating the schema");
@@ -61,5 +61,5 @@ export function parseSchema(schema: any): DurationSchemaT | PointSchemaT {
     throw e;
   }
 
-  throw new SchemaError("type must be either 'duration' or 'points'");
+  throw new SchemaError("Error with the schema: type must be either 'duration' or 'points'");
 }

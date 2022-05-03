@@ -10,6 +10,7 @@ export enum DataType {
   PERMISSION_LEVEL = "'ELEVATED' | 'STANDARD'",
   DATETIME = "ISOstring",
   UUID = "string",
+  RESULT_SCHEMA = "result_schema",
 }
 
 interface Body {
@@ -64,6 +65,13 @@ export const genericError = {
   },
 };
 
+export const NAME_ERROR = {
+  type: "error",
+  payload: {
+    message: "The name has to be at least 1 character long",
+  },
+};
+
 export function validateName(name: string) {
   return name.length > 0;
 }
@@ -106,12 +114,7 @@ export async function handleCreateByName(
   }
 
   if (!validateName(name)) {
-    return res.status(400).json({
-      type: "error",
-      payload: {
-        message: "The name has to be at least 1 character long",
-      },
-    });
+    return res.status(400).json(NAME_ERROR);
   }
 
   // Check if link object exsits

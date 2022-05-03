@@ -1,8 +1,8 @@
 import { Admin } from "@prisma/client";
-import { PrismaClientUnknownRequestError } from "@prisma/client/runtime";
+import { PrismaClientKnownRequestError, PrismaClientUnknownRequestError } from "@prisma/client/runtime";
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
-import { generateError, genericError, handleCreateByName } from "./common";
+import { createInsufficientPermissionsError, generateError, genericError, handleCreateByName } from "./common";
 
 const basicGroup = {
   pid: true,
@@ -113,4 +113,28 @@ export const createGroup = async (req: Request<{ organisationPid: string }, {}, 
     req,
     res
   );
+};
+
+interface DeleteGroupQueryParams {
+  pid: string;
+}
+
+export const deleteGroup = async (req: Request<DeleteGroupQueryParams>, res: Response) => {
+  if (req.auth?.permission_level !== "ELEVATED") {
+    return res.status(403).json(createInsufficientPermissionsError());
+  }
+
+  const { pid } = req.params;
+
+  try {
+    prisma.group.delete({ where: { pid } });
+
+    return res.status(204).end();
+  } catch (e) {
+    if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
+      return res.status(404).json(generateError(`The group with the ID ${pid} could not be found`));
+    }
+
+    throw e;
+  }
 };

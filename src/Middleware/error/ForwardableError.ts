@@ -1,6 +1,7 @@
 export default class ForwardableError extends Error {
   // If in different context
   private readonly __id = "CUSTOM_ERROR";
+  protected readonly __oid?: string;
 
   public readonly status: number;
 

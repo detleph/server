@@ -6,7 +6,7 @@ const {
 
 const defaultJsonFormat = combine(errors({ stack: true }), timestamp(), json({ space: 2 }));
 
-const customCLIFormat = printf(({ level, message, label, timestamp, stack }) => {
+export const customCLIFormat = printf(({ level, message, label, timestamp, stack }) => {
   let output = `${level}${stack ? `(1/2:message)` : ""} at ${timestamp}${label ? ` (#${label})` : ""}: ${message}${
     stack ? "\n" : ""
   }`;

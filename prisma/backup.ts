@@ -72,3 +72,30 @@ export const writeFullBackup = async (path: string) => {
 
   logger.info("Backup finished!");
 };
+
+export async function pushPrismaBackup(data: ModelSelect<any[]>) {
+  const prisma = new PrismaClient();
+
+  logger.info("Starting push...");
+
+  for (const [k, v] of Object.entries(data)) {
+    const deleteBatch = await (prisma as any)[k].deleteMany();
+
+    logger.info(`Purged ${deleteBatch.count} records from '${k}'`);
+
+    logger.info(`Pushing ${v.length} records to '${k}'`);
+
+    await (prisma as any)[k].createMany({ data: v });
+  }
+}
+
+export async function loadPrismaBackup(path: string) {
+  logger.info(`Reading backup from file '${path}'`);
+  let data: any = await fs.readFile(path, "utf-8");
+
+  data = JSON.parse(data);
+
+  await pushPrismaBackup(data);
+
+  logger.info("Backup loaded successfully!");
+}

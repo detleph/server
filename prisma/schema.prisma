@@ -18,30 +18,7 @@ model Event {
 
   disciplines   Discipline[]
   organisations Organisation[]
-  campaign      Campaign[]
   visual        Media[]
-}
-
-model Campaign {
-  id        Int      @id @default(autoincrement())
-  pid       String   @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  start     DateTime
-  expiresAt DateTime
-
-  links   Link[]
-  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  eventId Int    @unique
-}
-
-model Link {
-  id   Int    @id @default(autoincrement())
-  pid  String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  link String
-
-  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  campaignId Int
-  group      Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  groupId    Int      @unique
 }
 
 model Admin {
@@ -97,7 +74,6 @@ model Participant {
   pid       String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   firstName String
   lastName  String
-  gender    Gender
   relevance Job
 
   group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
@@ -134,11 +110,10 @@ model Group {
   name       String
   user_limit Int    @default(40)
   level      Int
+
   organisation   Organisation  @relation(fields: [organisationId], references: [id], onDelete: Cascade)
   organisationId Int
-
   participants   Participant[]
-  link           Link?
   admins         Admin[]
 }
 
@@ -156,12 +131,6 @@ model Media {
 enum AdminLevel {
   STANDARD
   ELEVATED
-}
-
-enum Gender {
-  MALE
-  FEMALE
-  OTHER
 }
 
 enum Job {

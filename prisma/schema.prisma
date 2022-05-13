@@ -10,11 +10,12 @@ generator client {
 }
 
 model Event {
-  id          Int      @id @default(autoincrement()) // Primary key
-  pid         String   @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid // Public key
-  date        DateTime
-  name        String
-  description String
+  id               Int      @id @default(autoincrement()) // Primary key
+  pid              String   @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid // Public key
+  date             DateTime
+  name             String
+  briefDescription String
+  fullDescription  String?
 
   disciplines   Discipline[]
   organisations Organisation[]
@@ -119,13 +120,12 @@ model Group {
 
 model Media {
   id          Int    @id @default(autoincrement())
-  pid         String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pid         String @unique
   description String
-  location    String @unique
 
-  event      Event[]
-  discipline Discipline[]
-  role       RoleSchema[]
+  events      Event[]
+  disciplines Discipline[]
+  roles       RoleSchema[]
 }
 
 enum AdminLevel {

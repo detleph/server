@@ -123,3 +123,61 @@ export const createRoleSchema = async (
     throw e;
   }
 };
+
+interface visualParams {
+  schemaPid: string;
+}
+
+interface visualBody {
+  mediaPid: string;
+}
+
+export const addVisual = async (req: Request<visualParams, {}, visualBody>, res: Response) => {
+  if (req.auth?.permission_level != "ELEVATED"){
+    res.status(403).json(createInsufficientPermissionsError());
+  }
+
+  const { schemaPid } = req.params;
+  
+  const schema = await prisma.roleSchema.update({
+    where: { pid: schemaPid },
+    data: {
+      visual: { connect: { pid: req.body.mediaPid } }
+    }
+  });
+
+  if (!schema) {
+    throw new NotFoundError("role_schema", schemaPid);
+  }
+
+  return res.status(200).json({
+    type: "success",
+    payload: { schema }
+  })
+};
+
+export const deleteVisual = async (req: Request<visualParams, {}, visualBody>, res: Response) => {
+  if (req.auth?.permission_level != "ELEVATED"){
+    res.status(403).json(createInsufficientPermissionsError());
+  }
+
+  const { schemaPid } = req.params;
+
+  try {
+    await prisma.roleSchema.update({ 
+      where: { 
+        pid: schemaPid,
+       },
+      data: { 
+        visual: { disconnect: { pid: req.body.mediaPid } }
+       }
+    });
+    return res.status(204).end();
+  } catch (e) {
+    if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
+      throw new NotFoundError("role_schema", schemaPid);
+    }
+
+    throw e;
+  }
+};

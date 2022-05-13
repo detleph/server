@@ -2,13 +2,15 @@ import { Prisma } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
+import NotFoundError from "../Middleware/error/NotFoundError";
 import { createInsufficientPermissionsError, DataType, generateError, generateInvalidBodyError } from "./common";
 
 export const getAllEvents = async (req: Request, res: Response) => {
   const events = await prisma.event.findMany({
     select: {
       name: true,
-      description: true,
+      briefDescription: true,
+      fullDescription: true,
       date: true,
       pid: true,
       id: false,
@@ -41,7 +43,8 @@ export const getEvent = async (req: Request, res: Response) => {
       },
       select: {
         name: true,
-        description: true,
+        briefDescription: true,
+        fullDescription: true,
         date: true,
         pid: true,
         id: false,
@@ -102,14 +105,14 @@ export const addEvent = async (req: Request, res: Response) => {
     data: {
       name: req.body.name,
       date: req.body.date,
-      description: req.body.description,
+      briefDescription: req.body.description,
     },
     select: {
       name: true,
       date: true,
       pid: true,
       id: false,
-      description: true,
+      briefDescription: true,
     },
   });
 
@@ -140,6 +143,64 @@ export const deleteEvent = (req: Request<DeleteEventQueryParams>, res: Response)
   } catch (e) {
     if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
       return res.status(404).json(generateError(`The organisation with the ID ${pid} could not be found`));
+    }
+
+    throw e;
+  }
+};
+
+interface visualParams {
+  eventPid: string;
+}
+
+interface visualBody {
+  mediaPid: string;
+}
+
+export const addVisual = async (req: Request<visualParams, {}, visualBody>, res: Response) => {
+  if (req.auth?.permission_level != "ELEVATED"){
+    res.status(403).json(createInsufficientPermissionsError());
+  }
+
+  const { eventPid } = req.params;
+  
+  const event = await prisma.event.update({
+    where: { pid: eventPid },
+    data: {
+      visual: { connect: { pid: req.body.mediaPid } }
+    }
+  });
+
+  if (!event) {
+    throw new NotFoundError("event", eventPid);
+  }
+
+  return res.status(200).json({
+    type: "success",
+    payload: { event }
+  })
+};
+
+export const deleteVisual = async (req: Request<visualParams, {}, visualBody>, res: Response) => {
+  if (req.auth?.permission_level != "ELEVATED"){
+    res.status(403).json(createInsufficientPermissionsError());
+  }
+
+  const { eventPid } = req.params;
+
+  try {
+    await prisma.event.update({ 
+      where: { 
+        pid: eventPid,
+       },
+      data: { 
+        visual: { disconnect: { pid: req.body.mediaPid } }
+       }
+    });
+    return res.status(204).end();
+  } catch (e) {
+    if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
+      throw new NotFoundError("discipline", eventPid);
     }
 
     throw e;

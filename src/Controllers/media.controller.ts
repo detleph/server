@@ -1,8 +1,16 @@
-import { Request, Response } from "express";
+import { Request, response, Response } from "express";
 import fs from "fs";
 import isSvg from "is-svg";
 import { fromBuffer as fileTypeFromBuffer } from "file-type";
 import { AUTH_ERROR, createError, createInsufficientPermissionsError } from "./common";
+import { Prisma } from "@prisma/client";
+import prisma from "../lib/prisma";
+import NotFoundError from "../Middleware/error/NotFoundError";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
+import { generateInvalidBodyError, DataType,  } from "./common";
+import { type } from "os";
+import {unlink} from "fs/promises"
+
 
 function createMediaLinks(fileName: string) {
   return [{ rel: "self", type: "GET", href: `/api/media/${fileName}` }];
@@ -29,6 +37,14 @@ export const uploadImage = async (req: Request, res: Response) => {
         },
       },
     });
+  }
+
+  if ( typeof req.body.description !== "string") {
+    return res.status(400).json(
+      generateInvalidBodyError({
+        description: DataType.STRING
+      })
+    );
   }
 
   const file = req.files.file;
@@ -69,11 +85,80 @@ export const uploadImage = async (req: Request, res: Response) => {
 
   file.mv("media/" + fileName, console.error);
 
+  //generate record
+  const media = await prisma.media.create({
+    data: {
+      pid: fileName,
+      description: req.body.description,
+    },
+    select: {
+      pid: true,
+      description: true,
+    }
+  })
+
   return res.status(201).json({
     type: "success",
-    payload: {
-      message: "The file was uploaded and created on the server",
+    payload: { media }
+  })
+};
+
+export const getAllMedia = async (req: Request, res: Response) => {
+  const medias = await prisma.media.findMany({
+    select: {
+      description: true,
+      events: true,
+      disciplines: true,
+      roles: true,
+      pid: true,
+      id: false,
     },
-    _links: createMediaLinks(fileName),
   });
+
+  res.status(200).json({
+    type: "success",
+    payload: {
+      medias,
+    },
+  });
+};
+
+interface CreateMediaBody {
+  description?: string;
+  location?: string;
+
+  events?: string[];
+  disciplines?: string[];
+  roles?: string[];
+}
+
+interface MediaParams {
+  eventPid?: string;
+  disciplinePid?: string;
+  rolePid?: string;
+}
+
+export const deleteMedia = async (req: Request, res: Response) => {
+  if (req.auth?.permission_level != "ELEVATED"){
+    res.status(403).json(createInsufficientPermissionsError());
+  }
+
+  const { pid } = req.params;
+
+  const location = "media/" + pid;
+
+  if (fs.existsSync(location)) {
+    await unlink(location);
+  }
+
+  try {
+    await prisma.discipline.delete({ where: { pid }});
+    return res.status(204).end();
+  } catch (e) {
+    if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
+      throw new NotFoundError("discipline", pid);
+    }
+
+    throw e;
+  }
 };

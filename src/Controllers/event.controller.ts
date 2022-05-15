@@ -92,7 +92,8 @@ export const addEvent = async (req: Request, res: Response) => {
   if (
     typeof req.body.name !== "string" ||
     typeof req.body.date !== "string" ||
-    typeof req.body.description !== "string"
+    typeof req.body.description !== "string" ||
+    req.body.fullDescription && req.body.fullDescription !== "string"
   ) {
     generateInvalidBodyError({
       name: DataType.STRING,
@@ -115,6 +116,7 @@ export const addEvent = async (req: Request, res: Response) => {
       pid: true,
       id: false,
       briefDescription: true,
+      fullDescription: true,
     },
   });
 

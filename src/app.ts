@@ -60,10 +60,10 @@ async function main() {
 
   app.use("/api/role-schemas", roleSchemaRouter);
 
-  // Error handling
-  app.use(defaultErrorHandler); // Not working
-
   app.use("/api/media", mediaRouter);
+
+  // Error handling
+  app.use(defaultErrorHandler); // This has to be the LAST ROUTE
 
   // Disable the media router for now
   // app.use("/api/media", mediaRouter);

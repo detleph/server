@@ -86,12 +86,6 @@ export const uploadImage = async (req: Request, res: Response) => {
 
   const fileName = file.md5 + (fileIsSvg ? ".svg" : "." + fileType?.ext);
 
-  if (fs.existsSync("media/" + fileName)) {
-    return res.status(409).json(createError("The uploaded file already exists", {}, createMediaLinks(fileName)));
-  }
-
-  file.mv("/app/media/" + fileName, console.error);
-
   try {
     //generate record
     const media = await prisma.media.create({
@@ -113,6 +107,10 @@ export const uploadImage = async (req: Request, res: Response) => {
     if (e instanceof PrismaClientKnownRequestError && e.code === "P2002") {
       throw new ForwardableError(409, `The image with the the hash and extenstion ${fileName} already exists!`);
     }
+  }
+
+  if (!fs.existsSync("media/" + fileName)) {
+    file.mv("/app/media/" + fileName, console.error);
   }
 };
 

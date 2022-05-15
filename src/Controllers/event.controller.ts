@@ -11,6 +11,7 @@ export const getAllEvents = async (req: Request, res: Response) => {
       name: true,
       briefDescription: true,
       fullDescription: true,
+      visual: {select: {pid: true, description: true}},
       date: true,
       pid: true,
       id: false,
@@ -48,6 +49,7 @@ export const getEvent = async (req: Request, res: Response) => {
         date: true,
         pid: true,
         id: false,
+        visual: {select: {pid: true, description: true}}
       },
     });
 
@@ -149,6 +151,8 @@ export const deleteEvent = (req: Request<DeleteEventQueryParams>, res: Response)
   }
 };
 
+// REVIEW: This code **will** need to be de-duplicated
+
 interface visualParams {
   eventPid: string;
 }
@@ -163,6 +167,10 @@ export const addVisual = async (req: Request<visualParams, {}, visualBody>, res:
   }
 
   const { eventPid } = req.params;
+
+  if (typeof req.body.mediaPid !== "string") {
+    res.status(400).json(generateInvalidBodyError({mediaPid: DataType.STRING}));
+  }
   
   const event = await prisma.event.update({
     where: { pid: eventPid },
@@ -177,7 +185,7 @@ export const addVisual = async (req: Request<visualParams, {}, visualBody>, res:
 
   return res.status(200).json({
     type: "success",
-    payload: { event }
+    payload: { }
   })
 };
 

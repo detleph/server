@@ -10,8 +10,12 @@ router.get("/:eventId", getEvent);
 
 router.post("/", requireAuthentication, addEvent);
 
-router.post<"/:eventPid/images", {eventPid: string}>("/:eventPid/images", requireAuthentication, addVisual);
+router.post<"/:eventPid/media", { eventPid: string }>("/:eventPid/media", requireAuthentication, addVisual);
 
-router.delete<"/:eventPid/images/:pid", {eventPid: string, pid: string}>("/:eventPid/images/:pid", requireAuthentication, deleteVisual);
+router.delete<"/:eventPid/media/:pid", { eventPid: string; pid: string }>(
+  "/:eventPid/media/:pid",
+  requireAuthentication,
+  deleteVisual
+);
 
 export default router;

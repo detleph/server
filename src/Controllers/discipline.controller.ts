@@ -216,7 +216,7 @@ export const addVisual = async (req: Request<visualParams, {}, visualBody>, res:
 
   return res.status(200).json({
     type: "success",
-    payload: { discipline }
+    payload: {  }
   })
 };
 

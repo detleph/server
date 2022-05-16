@@ -30,7 +30,6 @@ export const uploadImage = async (req: Request, res: Response) => {
   // REVIEW: This is only a **quick** fix (As the body is multipart form data, it cannot be used like this)
   // @ts-ignore
   req.body.description = "Sample image";
-  console.log(req.body);
 
   if (!req.files || !("file" in req.files)) {
     return res.json({
@@ -99,6 +98,10 @@ export const uploadImage = async (req: Request, res: Response) => {
       },
     });
 
+    if (!fs.existsSync("media/" + fileName)) {
+      file.mv("media/" + fileName, console.error);
+    }
+
     return res.status(201).json({
       type: "success",
       payload: { media },
@@ -107,10 +110,6 @@ export const uploadImage = async (req: Request, res: Response) => {
     if (e instanceof PrismaClientKnownRequestError && e.code === "P2002") {
       throw new ForwardableError(409, `The image with the the hash and extenstion ${fileName} already exists!`);
     }
-  }
-
-  if (!fs.existsSync("media/" + fileName)) {
-    file.mv("/app/media/" + fileName, console.error);
   }
 };
 

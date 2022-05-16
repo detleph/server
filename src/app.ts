@@ -19,21 +19,26 @@ require("dotenv").config(); // Load dotenv config
 
 const app = express();
 
-if (process.env.NODE_ENV === "development") {
-  logger.info("Using development mode");
-}
-
 async function main() {
-  // Dev
-  await prisma.admin.upsert({
-    where: { id: 1 },
-    create: {
-      name: "admin",
-      password: await argon2.hash("test", { type: argon2.argon2id }),
-      permission_level: "ELEVATED",
-    },
-    update: {},
-  });
+  if (process.env.NODE_ENV === "development") {
+    logger.info("Using development mode");
+    logger.warning(
+      "This mode should not be used in any production-near environment as it is significantly less secure than the production mode"
+    );
+
+    // TODO: How should you login to the prod server by default? Maybe random password?
+    await prisma.admin.upsert({
+      where: { id: 1 },
+      create: {
+        name: "admin",
+        password: await argon2.hash("test", { type: argon2.argon2id }),
+        permission_level: "ELEVATED",
+      },
+      update: {},
+    });
+  } else {
+    logger.info("Using production mode");
+  }
 
   // Todo: Everything
 

@@ -143,25 +143,27 @@ export const getAllMedia = async (req: Request, res: Response) => {
   res.status(200).json({
     type: "success",
     payload: {
-      medias,
+      media: medias,
     },
   });
 };
 
-interface CreateMediaBody {
-  description?: string;
-  location?: string;
+export const getMediaMeta = async (req: Request, res: Response) => {
+  const pid = req.params.pid;
 
-  events?: string[];
-  disciplines?: string[];
-  roles?: string[];
-}
+  const meta = await prisma.media.findUnique({ where: { pid }, select: { pid: true, description: true } });
 
-interface MediaParams {
-  eventPid?: string;
-  disciplinePid?: string;
-  rolePid?: string;
-}
+  if (!meta) {
+    throw new NotFoundError("media", pid);
+  }
+
+  return res.status(200).json({
+    type: "success",
+    payload: {
+      meta,
+    },
+  });
+};
 
 export const deleteMedia = async (req: Request, res: Response) => {
   if (req.auth?.permission_level != "ELEVATED") {

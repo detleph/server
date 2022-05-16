@@ -11,6 +11,7 @@ import { generateInvalidBodyError, DataType } from "./common";
 import { type } from "os";
 import { unlink } from "fs/promises";
 import ForwardableError from "../Middleware/error/ForwardableError";
+import SchemaError from "../Middleware/error/SchemaError";
 
 require("express-async-errors");
 
@@ -27,9 +28,29 @@ export const uploadImage = async (req: Request, res: Response) => {
     return res.status(403).json(createInsufficientPermissionsError());
   }
 
-  // REVIEW: This is only a **quick** fix (As the body is multipart form data, it cannot be used like this)
-  // @ts-ignore
-  req.body.description = "Sample image";
+  let description = "Sample images";
+
+  const meta = req.body.meta;
+
+  if (meta) {
+    try {
+      const { description: desc } = JSON.parse(meta);
+
+      if (typeof desc === "string") description = desc;
+    } catch (e) {
+      if (e instanceof SyntaxError) {
+        return res.status(400).json({
+          type: "error",
+          payload: {
+            message: "'meta' could not be parsed",
+            schema: { mutlipart: { file: "binary file", meta: { ["description?"]: "string" } } },
+          },
+        });
+      }
+
+      throw e;
+    }
+  }
 
   if (!req.files || !("file" in req.files)) {
     return res.json({
@@ -43,14 +64,6 @@ export const uploadImage = async (req: Request, res: Response) => {
         },
       },
     });
-  }
-
-  if (typeof req.body.description !== "string") {
-    return res.status(400).json(
-      generateInvalidBodyError({
-        description: DataType.STRING,
-      })
-    );
   }
 
   const file = req.files.file;
@@ -90,7 +103,7 @@ export const uploadImage = async (req: Request, res: Response) => {
     const media = await prisma.media.create({
       data: {
         pid: fileName,
-        description: req.body.description,
+        description: description,
       },
       select: {
         pid: true,
@@ -110,6 +123,8 @@ export const uploadImage = async (req: Request, res: Response) => {
     if (e instanceof PrismaClientKnownRequestError && e.code === "P2002") {
       throw new ForwardableError(409, `The image with the the hash and extenstion ${fileName} already exists!`);
     }
+
+    throw e;
   }
 };
 

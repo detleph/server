@@ -51,6 +51,8 @@ if [ "$RECREATE" = true ]; then
         -e DATABASE_PASSWORD=server \
         -e DATABASE_URL="postgresql://server:server@postgres:5432/management?schema=public" \
         -e NODE_ENV="development" \
+        -e PORT="${D_PORT}" \
+        -p "${D_PORT}":"${D_PORT}" \
         --entrypoint "/app/scripts/docker-entrypoint.dev.sh" \
         node
 fi

@@ -156,12 +156,12 @@ export const addVisual = async (req: Request<visualParams, {}, visualBody>, res:
   })
 };
 
-export const deleteVisual = async (req: Request<visualParams, {}, visualBody>, res: Response) => {
+export const deleteVisual = async (req: Request<visualParams & { pid: string}>, res: Response) => {
   if (req.auth?.permission_level != "ELEVATED"){
     res.status(403).json(createInsufficientPermissionsError());
   }
 
-  const { schemaPid } = req.params;
+  const { schemaPid, pid } = req.params;
 
   try {
     await prisma.roleSchema.update({ 
@@ -169,7 +169,7 @@ export const deleteVisual = async (req: Request<visualParams, {}, visualBody>, r
         pid: schemaPid,
        },
       data: { 
-        visual: { disconnect: { pid: req.body.mediaPid } }
+        visual: { disconnect: { pid } }
        }
     });
     return res.status(204).end();

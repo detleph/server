@@ -132,9 +132,9 @@ export const getAllMedia = async (req: Request, res: Response) => {
   const medias = await prisma.media.findMany({
     select: {
       description: true,
-      events: true,
-      disciplines: true,
-      roles: true,
+      events: {select: {pid: true}},
+      disciplines: {select: {pid: true}},
+      roles: {select: {pid: true}},
       pid: true,
       id: false,
     },

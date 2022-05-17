@@ -12,6 +12,7 @@ import roleSchemaRouter from "./Routes/role_schema.routes";
 import defaultErrorHandler from "./Middleware/error/handler";
 import logger from "./Middleware/error/logger";
 import debugLogger from "./Middleware/debug/logger";
+import { notFoundHandler, rootHandler } from "./Middleware/error/defaultRoutes";
 
 // Set up async error handling
 require("express-async-errors");
@@ -79,8 +80,12 @@ async function main() {
 
   app.use("/api/role-schemas", roleSchemaRouter);
 
+  app.get("/", rootHandler);
+
   // Error handling
   app.use(defaultErrorHandler); // Not working
+
+  app.use(notFoundHandler);
 
   app.listen(process.env.PORT, () => {
     logger.info(`Listening on port ${process.env.PORT}`);

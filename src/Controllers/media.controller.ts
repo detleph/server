@@ -176,7 +176,6 @@ export const deleteMedia = async (req: Request, res: Response) => {
 
   if (fs.existsSync(location)) {
     await unlink(location);
-    1;
   }
 
   try {

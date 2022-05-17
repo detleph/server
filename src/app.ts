@@ -3,6 +3,7 @@ import prisma from "./lib/prisma";
 import eventRouter from "./Routes/event.routes";
 import adminAuthRouter from "./Routes/admin_auth.routes";
 import argon2 from "argon2";
+import cors from "cors";
 import adminRouter from "./Routes/admin.routes";
 import organisationRouter from "./Routes/organisation.routes";
 import groupRouter from "./Routes/group.routes";
@@ -36,8 +37,22 @@ async function main() {
       },
       update: {},
     });
+
+    // Allow all CORS requests
+    app.use(cors());
   } else {
     logger.info("Using production mode");
+
+    // Configure cors
+    app.use(
+      cors({
+        origin: process.env.ALLOW_ORIGIN,
+        allowedHeaders: ["Content-Type", "Authorization"],
+        preflightContinue: false,
+        methods: ["GET", "PUT", "PATCH", "POST", "DELETE"],
+        optionsSuccessStatus: 204,
+      })
+    );
   }
 
   // Todo: Everything

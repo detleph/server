@@ -133,17 +133,17 @@ interface visualBody {
 }
 
 export const addVisual = async (req: Request<visualParams, {}, visualBody>, res: Response) => {
-  if (req.auth?.permission_level != "ELEVATED"){
+  if (req.auth?.permission_level != "ELEVATED") {
     res.status(403).json(createInsufficientPermissionsError());
   }
 
   const { schemaPid } = req.params;
-  
+
   const schema = await prisma.roleSchema.update({
     where: { pid: schemaPid },
     data: {
-      visual: { connect: { pid: req.body.mediaPid } }
-    }
+      visual: { connect: { pid: req.body.mediaPid } },
+    },
   });
 
   if (!schema) {
@@ -152,25 +152,25 @@ export const addVisual = async (req: Request<visualParams, {}, visualBody>, res:
 
   return res.status(200).json({
     type: "success",
-    payload: {  }
-  })
+    payload: {},
+  });
 };
 
-export const deleteVisual = async (req: Request<visualParams & { pid: string}>, res: Response) => {
-  if (req.auth?.permission_level != "ELEVATED"){
+export const deleteVisual = async (req: Request<visualParams & { pid: string }>, res: Response) => {
+  if (req.auth?.permission_level != "ELEVATED") {
     res.status(403).json(createInsufficientPermissionsError());
   }
 
   const { schemaPid, pid } = req.params;
 
   try {
-    await prisma.roleSchema.update({ 
-      where: { 
+    await prisma.roleSchema.update({
+      where: {
         pid: schemaPid,
-       },
-      data: { 
-        visual: { disconnect: { pid } }
-       }
+      },
+      data: {
+        visual: { disconnect: { pid } },
+      },
     });
     return res.status(204).end();
   } catch (e) {

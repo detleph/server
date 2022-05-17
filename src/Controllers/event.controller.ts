@@ -52,7 +52,7 @@ export const getEvent = async (req: Request, res: Response) => {
         date: true,
         pid: true,
         id: false,
-        visual: { select: { pid: true, description: true } }
+        visual: { select: { pid: true, description: true } },
       },
     });
 
@@ -100,14 +100,16 @@ export const addEvent = async (req: Request, res: Response) => {
     typeof req.body.name !== "string" ||
     typeof req.body.date !== "string" ||
     typeof req.body.briefDescription !== "string" ||
-    req.body.fullDescription && typeof req.body.fullDescription !== "string"
+    (req.body.fullDescription && typeof req.body.fullDescription !== "string")
   ) {
-    return res.status(400).json(generateInvalidBodyError({
-      name: DataType.STRING,
-      date: DataType.DATETIME,
-      briefDescription: DataType.STRING,
-      ["fullDescription?"]: DataType.STRING,
-    }));
+    return res.status(400).json(
+      generateInvalidBodyError({
+        name: DataType.STRING,
+        date: DataType.DATETIME,
+        briefDescription: DataType.STRING,
+        ["fullDescription?"]: DataType.STRING,
+      })
+    );
   }
 
   //TODO: Check if date is valid
@@ -141,8 +143,8 @@ const EventBody = z.object({
   name: z.string(),
   date: z.string(),
   briefDescription: z.string(),
-  fullDescription: z.string()
-})
+  fullDescription: z.string(),
+});
 
 const UpdateBody = EventBody.partial();
 
@@ -156,12 +158,14 @@ export const updateEvent = async (req: Request<{ pid: string }>, res: Response) 
   const result = UpdateBody.safeParse(req.body);
 
   if (result.success === false) {
-    return res.status(400).json(generateInvalidBodyError({
-      name: DataType.STRING,
-      date: DataType.DATETIME,
-      briefDescription: DataType.STRING,
-      ["fullDescription?"]: DataType.STRING,
-    }));
+    return res.status(400).json(
+      generateInvalidBodyError({
+        name: DataType.STRING,
+        date: DataType.DATETIME,
+        briefDescription: DataType.STRING,
+        ["fullDescription?"]: DataType.STRING,
+      })
+    );
   }
 
   const body = result.data;
@@ -173,16 +177,16 @@ export const updateEvent = async (req: Request<{ pid: string }>, res: Response) 
         name: body.name,
         date: body.date,
         briefDescription: body.briefDescription,
-        fullDescription: body.fullDescription
+        fullDescription: body.fullDescription,
       },
       select: {
         pid: true,
         name: true,
         date: true,
         briefDescription: true,
-        fullDescription: true
-      }
-    })
+        fullDescription: true,
+      },
+    });
 
     if (!event) {
       throw new NotFoundError("event", pid);
@@ -191,7 +195,7 @@ export const updateEvent = async (req: Request<{ pid: string }>, res: Response) 
     res.status(200).json({
       type: "success",
       payload: {
-        event
+        event,
       },
     });
   } catch (e) {
@@ -217,8 +221,7 @@ export const updateEvent = async (req: Request<{ pid: string }>, res: Response) 
 
     throw e;
   }
-
-}
+};
 
 interface DeleteEventQueryParams {
   pid: string;
@@ -269,8 +272,8 @@ export const addVisual = async (req: Request<visualParams, {}, visualBody>, res:
   const event = await prisma.event.update({
     where: { pid: eventPid },
     data: {
-      visual: { connect: { pid: req.body.mediaPid } }
-    }
+      visual: { connect: { pid: req.body.mediaPid } },
+    },
   });
 
   if (!event) {
@@ -279,8 +282,8 @@ export const addVisual = async (req: Request<visualParams, {}, visualBody>, res:
 
   return res.status(200).json({
     type: "success",
-    payload: {}
-  })
+    payload: {},
+  });
 };
 
 export const deleteVisual = async (req: Request<visualParams & { pid: string }>, res: Response) => {
@@ -297,7 +300,7 @@ export const deleteVisual = async (req: Request<visualParams & { pid: string }>,
       },
       data: {
         visual: { disconnect: { pid } },
-      }
+      },
     });
     return res.status(204).end();
   } catch (e) {

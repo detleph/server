@@ -17,7 +17,7 @@ const roleSchema = {
   name: true,
   schema: true,
   discipline: { select: { pid: true, name: true } },
-  visual: { select: { pid: true, location: true } },
+  visual: { select: { pid: true } },
 } as const;
 
 export const _getAllRoleSchemas = async (res: Response, disciplinePid: string | undefined) => {

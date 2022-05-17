@@ -18,7 +18,7 @@ require("express-async-errors");
 const basicDiscipline = {
   pid: true,
   name: true,
-  visual: { select: { pid: true, location: true } },
+  visual: { select: { pid: true } },
   maxTeamSize: true,
   minTeamSize: true,
   event: { select: { pid: true, name: true } },
@@ -206,7 +206,7 @@ export const addVisual = async (req: Request<visualParams, {}, visualBody>, res:
   const discipline = await prisma.discipline.update({
     where: { pid: disciplinePid },
     data: {
-      visual: { connect: { pid: req.body.mediaPid } }
+      visual: {connect: {pid: req.body.mediaPid}}
     }
   });
 

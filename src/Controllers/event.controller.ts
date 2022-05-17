@@ -5,6 +5,8 @@ import prisma from "../lib/prisma";
 import NotFoundError from "../Middleware/error/NotFoundError";
 import { createInsufficientPermissionsError, DataType, generateError, generateInvalidBodyError } from "./common";
 
+require("express-async-errors");
+
 export const getAllEvents = async (req: Request, res: Response) => {
   const events = await prisma.event.findMany({
     select: {
@@ -53,6 +55,10 @@ export const getEvent = async (req: Request, res: Response) => {
       },
     });
 
+    if (!event) {
+      throw new NotFoundError("event", eventId);
+    }
+
     res.status(200).json({
       type: "success",
       payload: {
@@ -61,7 +67,7 @@ export const getEvent = async (req: Request, res: Response) => {
     });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError) {
-      res.status(500).json({
+      return res.status(500).json({
         type: "error",
         payload: {
           message: `Internal Server error occured. Try again later`,
@@ -70,7 +76,7 @@ export const getEvent = async (req: Request, res: Response) => {
       return;
     }
     if (e instanceof Prisma.PrismaClientUnknownRequestError) {
-      res.status(500).json({
+      return res.status(500).json({
         type: "error",
         payload: {
           message: "Unknown error occurred with your request. Check if your parameters are correct",
@@ -81,6 +87,8 @@ export const getEvent = async (req: Request, res: Response) => {
       });
       return;
     }
+
+    throw e;
   }
 };
 
@@ -92,14 +100,15 @@ export const addEvent = async (req: Request, res: Response) => {
   if (
     typeof req.body.name !== "string" ||
     typeof req.body.date !== "string" ||
-    typeof req.body.description !== "string" ||
-    req.body.fullDescription && req.body.fullDescription !== "string"
+    typeof req.body.briefDescription !== "string" ||
+    req.body.fullDescription && typeof req.body.fullDescription !== "string"
   ) {
-    generateInvalidBodyError({
+    return res.status(400).json(generateInvalidBodyError({
       name: DataType.STRING,
       date: DataType.DATETIME,
-      description: DataType.STRING,
-    });
+      briefDescription: DataType.STRING,
+      ["fullDescription?"]: DataType.STRING,
+    }));
   }
 
   //TODO: Check if date is valid
@@ -108,7 +117,8 @@ export const addEvent = async (req: Request, res: Response) => {
     data: {
       name: req.body.name,
       date: req.body.date,
-      briefDescription: req.body.description,
+      briefDescription: req.body.briefDescription,
+      fullDescription: req.body.fullDescription,
     },
     select: {
       name: true,
@@ -133,7 +143,7 @@ interface DeleteEventQueryParams {
 }
 
 // requires: auth(ELEVATED)
-export const deleteEvent = (req: Request<DeleteEventQueryParams>, res: Response) => {
+export const deleteEvent = async (req: Request<DeleteEventQueryParams>, res: Response) => {
   if (req.auth?.permission_level !== "ELEVATED") {
     res.status(403).json(createInsufficientPermissionsError());
   }
@@ -141,7 +151,7 @@ export const deleteEvent = (req: Request<DeleteEventQueryParams>, res: Response)
   const { pid } = req.params;
 
   try {
-    prisma.event.delete({ where: { pid } });
+    await prisma.event.delete({ where: { pid } });
 
     return res.status(204).end();
   } catch (e) {
@@ -191,12 +201,12 @@ export const addVisual = async (req: Request<visualParams, {}, visualBody>, res:
   })
 };
 
-export const deleteVisual = async (req: Request<visualParams, {}, visualBody>, res: Response) => {
+export const deleteVisual = async (req: Request<visualParams & { pid: string }>, res: Response) => {
   if (req.auth?.permission_level != "ELEVATED"){
     res.status(403).json(createInsufficientPermissionsError());
   }
 
-  const { eventPid } = req.params;
+  const { eventPid, pid } = req.params;
 
   try {
     await prisma.event.update({ 
@@ -204,7 +214,7 @@ export const deleteVisual = async (req: Request<visualParams, {}, visualBody>, r
         pid: eventPid,
        },
       data: { 
-        visual: { disconnect: { pid: req.body.mediaPid } }
+        visual: { disconnect: { pid } },
        }
     });
     return res.status(204).end();

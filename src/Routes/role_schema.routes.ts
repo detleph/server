@@ -20,9 +20,12 @@ disciplineRouter.get("/:disciplinePid/role-schemas", getAllRoleSchemasWithParam)
 
 disciplineRouter.post("/:disciplinePid/role-schemas", requireAuthentication, createRoleSchema);
 
-router.post<"/:schemaPid/images", {schemaPid: string}>("/:schemaPid/images", requireAuthentication, addVisual);
+router.post<"/:schemaPid/images", { schemaPid: string }>("/:schemaPid/images", requireAuthentication, addVisual);
 
-router.delete<"/:schemaPid/images/:pid", {schemaPid: string, pid: string}>("/:schemaPid/images/:pid", requireAuthentication, deleteVisual);
-
+router.delete<"/:schemaPid/images/:pid", { schemaPid: string; pid: string }>(
+  "/:schemaPid/images/:pid",
+  requireAuthentication,
+  deleteVisual
+);
 
 export default router;

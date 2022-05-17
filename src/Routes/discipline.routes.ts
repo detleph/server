@@ -18,9 +18,17 @@ router.get("/:pid", getDiscipline);
 
 router.delete<"/:pid", { pid: string }>("/:pid", requireAuthentication, deleteDiscipline);
 
-router.post<"/:disciplinePid/images", {disciplinePid: string}>("/:disciplinePid/images", requireAuthentication, addVisual);
+router.post<"/:disciplinePid/images", { disciplinePid: string }>(
+  "/:disciplinePid/images",
+  requireAuthentication,
+  addVisual
+);
 
-router.delete<"/:disciplinePid/images/:pid", {disciplinePid: string, pid: string}>("/:disciplinePid/images/:pid", requireAuthentication, deleteVisual);
+router.delete<"/:disciplinePid/images/:pid", { disciplinePid: string; pid: string }>(
+  "/:disciplinePid/images/:pid",
+  requireAuthentication,
+  deleteVisual
+);
 
 eventRouter.post("/:eventPid/disciplines", requireAuthentication, createDiscipline);
 

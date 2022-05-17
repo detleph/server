@@ -1,6 +1,14 @@
 import Express from "express";
 import { string } from "zod";
-import { addEvent, addVisual, deleteEvent, deleteVisual, getAllEvents, getEvent, updateEvent } from "../Controllers/event.controller";
+import {
+  addEvent,
+  addVisual,
+  deleteEvent,
+  deleteVisual,
+  getAllEvents,
+  getEvent,
+  updateEvent,
+} from "../Controllers/event.controller";
 import { requireAuthentication } from "../Middleware/auth/auth";
 const router = Express.Router();
 

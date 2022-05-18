@@ -21,6 +21,8 @@ const basicDiscipline = {
   visual: { select: { pid: true } },
   maxTeamSize: true,
   minTeamSize: true,
+  briefDescription: true,
+  fullDescription: true,
   event: { select: { pid: true, name: true } },
   roles: { select: { pid: true, name: true } },
 } as const;
@@ -117,6 +119,8 @@ interface CreateDisciplineBody {
   name?: string;
   minTeamSize?: number;
   maxTeamSize?: number;
+  briefDescription: string;
+  fullDescription: string;
 }
 
 // require: auth(ELEVATED)
@@ -126,9 +130,14 @@ export const createDiscipline = async (req: Request<{ eventPid: string }, {}, Cr
     return res.status(403).json(createInsufficientPermissionsError());
   }
 
-  const { name, minTeamSize, maxTeamSize } = req.body;
+  const { name, minTeamSize, maxTeamSize, briefDescription, fullDescription } = req.body;
 
-  if (typeof name !== "string" || typeof minTeamSize !== "number" || typeof maxTeamSize !== "number") {
+  if (typeof name !== "string" || 
+      typeof minTeamSize !== "number" || 
+      typeof maxTeamSize !== "number" || 
+      typeof briefDescription !== "string" ||
+      (fullDescription && typeof fullDescription !== "string")
+    ) {
     return res.status(400).json(
       generateInvalidBodyError({
         name: DataType.STRING,
@@ -144,7 +153,7 @@ export const createDiscipline = async (req: Request<{ eventPid: string }, {}, Cr
 
   try {
     const discipline = await prisma.discipline.create({
-      data: { name, minTeamSize, maxTeamSize, event: { connect: { pid: req.params.eventPid } } },
+      data: { name, minTeamSize, maxTeamSize, briefDescription, fullDescription, event: { connect: { pid: req.params.eventPid } } },
       select: {
         pid: true,
         name: true,

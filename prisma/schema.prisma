@@ -34,11 +34,13 @@ model Admin {
 }
 
 model Discipline {
-  id          Int    @id @default(autoincrement())
-  pid         String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String
-  minTeamSize Int
-  maxTeamSize Int
+  id               Int    @id @default(autoincrement())
+  pid              String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String
+  briefDescription String
+  fullDescription  String?
+  minTeamSize      Int
+  maxTeamSize      Int
 
   roles   RoleSchema[]
   teams   Team[]
@@ -121,7 +123,7 @@ model Group {
 model Media {
   id          Int    @id @default(autoincrement())
   pid         String @unique
-  description String
+  description String @default("visual")
 
   events      Event[]
   disciplines Discipline[]

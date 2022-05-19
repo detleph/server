@@ -1,0 +1,37 @@
+version: "3.4"
+services:
+  mail:
+    image: boky/postfix
+    restart: always
+    environment:
+      - ALLOWED_SENDER_DOMAINS=mail.${DOMAIN}
+    ports:
+      - "587:587"
+    container_name: "postfix"
+    volumes:
+      - ./host/keys/:/etc/opendkim/keys
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=server
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+    container_name: "postgres"
+  redis:
+    container_name: redis
+    image: redis
+    restart: always
+  server:
+    # REVIEW: This is setting the network context to host (during build time) which is generally considered a bad idea
+    build:
+      context: .
+      network: host
+    restart: always
+    container_name: "server"
+    ports:
+      - ${PORT:-3000}:${PORT:-3000}
+    environment:
+      - PORT=${PORT:-3000}
+      - DATABASE_URL=postgresql://server:${DATABASE_PASSWORD}@postgres:5432/management?schema=public
+      - DATABASE_USER=server
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}

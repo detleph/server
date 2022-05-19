@@ -28,7 +28,7 @@ describe("events", () => {
     it("should return an array with all the objects", (done) => {
       prisma.event
         .create({
-          data: { date: new Date(Date.now()).toISOString(), name: "yes" },
+          data: { date: new Date(Date.now()).toISOString(), name: "yes", description: "Hallo hansi" },
         })
         .then((a) => {
           chai
@@ -62,6 +62,7 @@ describe("events", () => {
           res.body.should.have.property("pid");
           res.body.should.have.property("name");
           res.body.should.have.property("date");
+          res.body.should.have.property("description");
           done();
         });
     });

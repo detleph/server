@@ -105,3 +105,9 @@ dist
 
 # Prisma
 prisma/migrations
+
+# Ignore config files for docker
+host/
+
+# Ignore flags
+INITIALIZED

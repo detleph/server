@@ -12,6 +12,7 @@ import roleSchemaRouter from "./Routes/role_schema.routes";
 import defaultErrorHandler from "./Middleware/error/handler";
 import logger from "./Middleware/error/logger";
 import debugLogger from "./Middleware/debug/logger";
+import mediaRouter from "./Routes/media.routes";
 import { notFoundHandler, rootHandler } from "./Middleware/error/defaultRoutes";
 
 // Set up async error handling
@@ -80,10 +81,16 @@ async function main() {
 
   app.use("/api/role-schemas", roleSchemaRouter);
 
+  app.use("/api/media", mediaRouter);
+  
   app.get("/", rootHandler);
+  app.get("/api", rootHandler);
 
   // Error handling
-  app.use(defaultErrorHandler); // Not working
+  app.use(defaultErrorHandler); // This has to be the LAST ROUTE
+
+  // Disable the media router for now
+  // app.use("/api/media", mediaRouter);
 
   app.use(notFoundHandler);
 

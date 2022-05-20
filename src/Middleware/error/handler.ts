@@ -67,7 +67,7 @@ export default function defaultErrorHandler(err: any, req: Request, res: Respons
   logger.error("--- Unhandled error ---");
   logger.error(err);
 
-  return res.status(err.status).json({
+  return res.status(err.status || 500).json({
     type: "error",
     payload: {
       message: err.message,

@@ -11,6 +11,8 @@ COPY package.json package-lock.json /app/
 # Change directory into the container
 WORKDIR /app
 
+RUN mkdir /app/media
+
 # Install dependencies
 RUN npm i -g typescript
 RUN npm i

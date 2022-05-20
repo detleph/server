@@ -111,3 +111,6 @@ host/
 
 # Ignore flags
 INITIALIZED
+
+# Ignore runtime files
+media/

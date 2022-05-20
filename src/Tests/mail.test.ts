@@ -1,4 +1,4 @@
-process.env.NODE_ENV = "test";
+/*process.env.NODE_ENV = "test";
 
 import chai, { expect } from "chai";
 import chaiaspromised from "chai-as-promised";
@@ -15,3 +15,4 @@ describe("mail", () => {
     info.accepted.length.should.eq(1);
   });
 });
+*/

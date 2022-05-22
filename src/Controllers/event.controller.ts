@@ -9,6 +9,8 @@ import { createInsufficientPermissionsError, DataType, generateError, generateIn
 require("express-async-errors");
 
 const EventBody = z.object({
+  pid: z.string().max(0),
+  id: z.string().max(0),
   name: z.string(),
   date: z.string(),
   briefDescription: z.string(),

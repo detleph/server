@@ -8,10 +8,12 @@ import organisationRouter from "./Routes/organisation.routes";
 import groupRouter from "./Routes/group.routes";
 import disciplineRouter from "./Routes/discipline.routes";
 import roleSchemaRouter from "./Routes/role_schema.routes";
+import trafficLogRouter from "./Routes/statistic.routes"
 import defaultErrorHandler from "./Middleware/error/handler";
 import logger from "./Middleware/error/logger";
 import debugLogger from "./Middleware/debug/logger";
 import mediaRouter from "./Routes/media.routes";
+import { visitLogger } from "./Controllers/statistic";
 
 // Set up async error handling
 require("express-async-errors");
@@ -44,6 +46,8 @@ async function main() {
 
   app.use(debugLogger);
 
+  app.use(visitLogger);
+
   // Admin authentication endpoints
   app.use("/api/authentication", adminAuthRouter);
 
@@ -61,6 +65,8 @@ async function main() {
   app.use("/api/role-schemas", roleSchemaRouter);
 
   app.use("/api/media", mediaRouter);
+  
+  app.use("/api/traffic", trafficLogRouter);
 
   // Error handling
   app.use(defaultErrorHandler); // This has to be the LAST ROUTE

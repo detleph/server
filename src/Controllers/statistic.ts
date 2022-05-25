@@ -2,12 +2,10 @@ import { NextFunction, Request, Response } from "express";
 import prisma from "../lib/prisma";
 import { createInsufficientPermissionsError } from "./common";
 
-export function visitLogger(req: Request, res: Response, next: NextFunction) {
-    let address = req.socket.remoteAddress;
+export const visitLogger = async (req: Request, res: Response) => {
+    const address = req.headers['x-forwarded-for']?.at(0) || req.socket.remoteAddress;
 
     prisma.visitorLog.create({data: { ipAddress: address, }});
-  
-    next();
 }
 
 export const getAllVisits = async (req: Request, res: Response) => {

@@ -38,15 +38,11 @@ async function main() {
     update: {},
   });
 
-  // Todo: Everything
-
   // Bodyparser and urlencoded to parse post request bodies
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
 
   app.use(debugLogger);
-
-  app.use(visitLogger);
 
   // Admin authentication endpoints
   app.use("/api/authentication", adminAuthRouter);

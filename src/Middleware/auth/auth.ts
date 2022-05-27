@@ -6,13 +6,17 @@ import { authClient } from "../../lib/redis";
 import jwt, { JsonWebTokenError, JwtPayload } from "jsonwebtoken";
 import prisma from "../../lib/prisma";
 
-const JWT_SECRET = process.env.JWT_SECRET || "secret";
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export const verifyAuthorizationFormat = (authorization: string) => /^Bearer .+$/.test(authorization);
 
 export const getBearerToken = (authorization: string) => authorization.slice(7);
 
 export const requireAuthentication = async (req: Request, res: Response, next: NextFunction) => {
+  if (!JWT_SECRET) {
+    throw new Error("JWT_SECRET not set");
+  }
+
   const { authorization } = req.headers;
 
   if (!authorization) {

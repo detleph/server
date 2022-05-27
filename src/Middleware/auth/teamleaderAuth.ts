@@ -1,7 +1,9 @@
 import { Participant } from "@prisma/client";
 import e, { NextFunction, Request, Response } from "express";
 import jwt, { JsonWebTokenError } from "jsonwebtoken";
+import AuthError from "../error/AuthError";
 import { getBearerToken, verifyAuthorizationFormat } from "./auth";
+import prisma from "../../lib/prisma";
 
 export interface TeamleaderJWTPayload {
   pid: string;
@@ -72,4 +74,24 @@ export async function requireTeamleaderAuthentication(req: Request, res: Respons
   }
 
   throw e;
+}
+
+export function requireLeaderOfTeam(auth: TeamleaderJWTPayload | undefined, teamPid: string) {
+  if (auth?.team !== teamPid) {
+    throw new AuthError("The provided authorization is not valid for the requested team");
+  }
+}
+
+export async function requireResponsibleForParticipant(auth: TeamleaderJWTPayload | undefined, participantPid: string) {
+  if (!auth) {
+    throw new AuthError("There was an error with your authorization");
+  }
+
+  const teamPid = (
+    await prisma.participant.findUnique({ where: { pid: participantPid }, select: { team: { select: { pid: true } } } })
+  )?.team.pid;
+
+  if (teamPid !== auth.team) {
+    throw new AuthError("The provided authorization is not valid for the requested participant");
+  }
 }

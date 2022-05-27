@@ -2,8 +2,11 @@ import { Role } from "@prisma/client";
 import { Request, Response } from "express";
 import { z } from "zod";
 import prisma from "../lib/prisma";
+import { requireLeaderOfTeam, requireResponsibleForParticipant } from "../Middleware/auth/teamleaderAuth";
 import NotFoundError from "../Middleware/error/NotFoundError";
 import { DataType, generateInvalidBodyError } from "./common";
+
+require("express-async-errors");
 
 /**
  *
@@ -29,7 +32,8 @@ export async function createRolesForTeam(teamPid: string) {
 export async function getRolesForTeam(req: Request<{ teamPid: string }>, res: Response) {
   const teamPid = req.params.teamPid;
 
-  // TODO: Check if leader of team
+  requireLeaderOfTeam(req.teamleader, teamPid);
+
   const roles = await prisma.role.findMany({
     where: { team: { pid: teamPid } },
     select: {
@@ -62,6 +66,8 @@ export async function assignParticipantToRole(req: Request<{ pid: string }>, res
 
   const { participantPid } = zBody.data;
   const rolePid = req.params.pid;
+
+  requireResponsibleForParticipant(req.teamleader, participantPid);
 
   const schema = await prisma.role.findFirst({
     where: { pid: rolePid, team: { participants: { some: { pid: participantPid } } } },

@@ -8,9 +8,9 @@ import prisma from "../../lib/prisma";
 
 const JWT_SECRET = process.env.JWT_SECRET || "secret";
 
-const verifyAuthorizationFormat = (authorization: string) => /^Bearer .+$/.test(authorization);
+export const verifyAuthorizationFormat = (authorization: string) => /^Bearer .+$/.test(authorization);
 
-const getBearerToken = (authorization: string) => authorization.slice(7);
+export const getBearerToken = (authorization: string) => authorization.slice(7);
 
 export const requireAuthentication = async (req: Request, res: Response, next: NextFunction) => {
   const { authorization } = req.headers;

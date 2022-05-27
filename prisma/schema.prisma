@@ -66,6 +66,7 @@ model Team {
   leaderEmail String
 
   roles        Role[]     @relation(name: "participants")
+  participants Participant[]
   discipline   Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
   disciplineId Int
 }
@@ -79,6 +80,8 @@ model Participant {
 
   group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
   groupId Int
+  team    Team  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId  Int
   roles   Role[]
 }
 

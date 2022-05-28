@@ -1,4 +1,4 @@
-import { Participant } from "@prisma/client";
+import { Team } from "@prisma/client";
 import e, { NextFunction, Request, Response } from "express";
 import jwt, { JsonWebTokenError } from "jsonwebtoken";
 import AuthError from "../error/AuthError";
@@ -6,20 +6,18 @@ import { getBearerToken, verifyAuthorizationFormat } from "./auth";
 import prisma from "../../lib/prisma";
 
 export interface TeamleaderJWTPayload {
-  pid: string;
   team: string;
 }
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-export function generateTeamleaderJWT(teamleader: Participant & { relevance: "TEAMLEADER"; team: { pid: string } }) {
+export function generateTeamleaderJWT(teamleader: Team) {
   if (!JWT_SECRET) {
     throw new Error("JWT_SECRET not set");
   }
 
   const payload: TeamleaderJWTPayload = {
-    pid: teamleader.pid,
-    team: teamleader.team.pid,
+    team: teamleader.pid,
   };
 
   return jwt.sign(payload, JWT_SECRET, { expiresIn: "4 days" });
@@ -57,7 +55,6 @@ export async function requireTeamleaderAuthentication(req: Request, res: Respons
 
     req.teamleader = {
       isAuthenticated: true,
-      pid: token_payload.pid,
       team: token_payload.team,
     };
 

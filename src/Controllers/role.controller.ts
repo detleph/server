@@ -93,3 +93,9 @@ export async function assignParticipantToRole(req: Request<{ pid: string }>, res
     },
   });
 }
+
+export async function deleteRolesFromTeam(teamPid: string){
+  await prisma.role.deleteMany({
+    where: { team: { pid: teamPid, } }
+  });
+}

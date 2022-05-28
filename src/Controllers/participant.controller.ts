@@ -2,8 +2,9 @@ import prisma from "../lib/prisma";
 import { z } from "zod";
 import { Request, Response } from "express";
 import { createInsufficientPermissionsError, DataType, generateError, generateInvalidBodyError } from "./common";
-import { Job } from "@prisma/client";
+import { Job, Prisma } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
+import NotFoundError from "../Middleware/error/NotFoundError";
 
 //TODO: add TeamleaderAuthentification
 // discuss wether 
@@ -13,7 +14,13 @@ const ParticipantBody = z.object({
     lastName: z.string(),
     groupId: z.string(),
     job: z.enum(["TEAMLEADER", "MEMBER"]),
-})
+});
+
+const updateParticipantBody = ParticipantBody.pick({
+    firstName: true,
+    lastName: true,
+    groupId: true,
+}).partial();
 
 const returnedParticipant = {
     pid: true,
@@ -65,4 +72,69 @@ export const createParticipant = async (req: Request<{ pid: string}>, res: Respo
         }
         throw e;
       }
+}
+
+const updateParticipant = async (req: Request<{ pid: string }>, res: Response) => {
+    //insert TeamleaderAuth
+
+    const result = updateParticipantBody.safeParse(req.body);
+
+    if(result.success === false){
+        return res.status(400).json(
+            generateInvalidBodyError({
+                firstname: DataType.STRING,
+                lastName: DataType.STRING,
+                groupId: DataType.UUID,
+            })
+        );
+    }
+
+    const body = result.data;
+    const { pid } = req.params;
+
+    try {
+        const participant = await prisma.participant.update({
+            where: { pid },
+            data: {
+                firstName: body.firstName,
+                lastName: body.lastName,
+                group: { connect: { pid: body.groupId, } },
+            },
+            select: returnedParticipant,
+        });
+    
+        if(!participant) {
+            throw new NotFoundError("participant", pid);
+        }
+    
+        res.status(200).json({
+            type: "success",
+            payload: participant,
+        });
+    
+    } catch (e) {
+        if (e instanceof Prisma.PrismaClientKnownRequestError) {
+            return res.status(500).json({
+              type: "error",
+              payload: {
+                message: `Internal Server error occured. Try again later`,
+              },
+            });
+          }
+          if (e instanceof Prisma.PrismaClientUnknownRequestError) {
+            return res.status(500).json({
+              type: "error",
+              payload: {
+                message: "Unknown error occurred with your request. Check if your parameters are correct",
+                schema: {
+                    firstname: DataType.STRING,
+                    lastName: DataType.STRING,
+                    groupId: DataType.UUID,
+                },
+              },
+            });
+          }
+      
+          throw e;
+    }
 }

@@ -14,6 +14,7 @@ export const getAllVisits = async (req: Request, res: Response) => {
     }
   
     const data = await prisma.visitorLog.findMany({
+      orderBy: { id: 'desc' },
       select: {
         id: true,
         date: true,

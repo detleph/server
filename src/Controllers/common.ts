@@ -23,6 +23,7 @@ export enum DataType {
   NUMBER = "number",
   INTEGER = "integer",
   PERMISSION_LEVEL = "'ELEVATED' | 'STANDARD'",
+  JOB = "'TEAMLEADER' | 'MEMBER'",
   DATETIME = "ISOstring",
   UUID = "string",
   RESULT_SCHEMA = "result_schema",

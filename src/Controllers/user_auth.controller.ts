@@ -5,6 +5,7 @@ import { nanoid } from "nanoid";
 import { verificationMail } from "../lib/mail";
 import { DataType, generateInvalidBodyError } from "./common";
 import { generateTeamleaderJWT } from "../Middleware/auth/teamleaderAuth";
+import { createRolesForTeam } from "./role.controller";
 
 interface CreateTeamBody {
   name: string;
@@ -37,6 +38,9 @@ export const register = async (req: Request<{}, {}, CreateTeamBody>, res: Respon
       disciplineId: true,
     },
   });
+
+  //To do: maybe use returned amount of created use?
+  createRolesForTeam(team.pid);
 
   const usid = nanoid();
 

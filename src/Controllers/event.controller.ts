@@ -241,7 +241,7 @@ export const deleteEvent = async (req: Request<DeleteEventQueryParams>, res: Res
     return res.status(204).end();
   } catch (e) {
     if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
-      return res.status(404).json(generateError(`The organisation with the ID ${pid} could not be found`));
+      return res.status(404).json(generateError(`The event with the ID ${pid} could not be found`));
     }
 
     throw e;

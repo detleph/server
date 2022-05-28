@@ -74,7 +74,7 @@ export const createParticipant = async (req: Request<{ pid: string}>, res: Respo
       }
 }
 
-const updateParticipant = async (req: Request<{ pid: string }>, res: Response) => {
+export const updateParticipant = async (req: Request<{ pid: string }>, res: Response) => {
     //insert TeamleaderAuth
 
     const result = updateParticipantBody.safeParse(req.body);
@@ -138,3 +138,21 @@ const updateParticipant = async (req: Request<{ pid: string }>, res: Response) =
           throw e;
     }
 }
+
+export const deleteParticipant = async (req: Request<{ pid: string }>, res: Response) => {
+    //insert TeamleaderAuth
+
+    const { pid } = req.params;
+
+    try {
+        await prisma.participant.delete({ where: { pid } });
+
+        return res.status(204).end();
+    } catch (e) {
+        if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
+            return res.status(404).json(generateError(`The participant with the ID ${pid} could not be found`));
+          }
+      
+          throw e;
+    }
+} 

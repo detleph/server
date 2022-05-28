@@ -64,6 +64,7 @@ model Team {
   pid         String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String
   leaderEmail String
+  verified    Boolean @default(false)
 
   roles        Role[]     @relation(name: "participants")
   participants Participant[]

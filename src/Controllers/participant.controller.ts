@@ -7,7 +7,6 @@ import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import NotFoundError from "../Middleware/error/NotFoundError";
 
 //TODO: add TeamleaderAuthentification
-// discuss wether 
 
 const ParticipantBody = z.object({
     firstName: z.string(),
@@ -16,10 +15,8 @@ const ParticipantBody = z.object({
     job: z.enum(["TEAMLEADER", "MEMBER"]),
 });
 
-const updateParticipantBody = ParticipantBody.pick({
-    firstName: true,
-    lastName: true,
-    groupId: true,
+const updateParticipantBody = ParticipantBody.omit({
+    job: true,
 }).partial();
 
 const returnedParticipant = {
@@ -27,8 +24,14 @@ const returnedParticipant = {
     firstName: true,
     lastName: true,
     relevance: true,
-    team: { select: { pid: true, } },
-    group: { select: { pid: true, } },
+    team: { select: {
+        pid: true, 
+        name: true,
+    } },
+    group: { select: {
+        pid: true,
+        name: true, 
+    } },
 } as const;
 
 export const createParticipant = async (req: Request<{ pid: string}>, res: Response) => {

@@ -8,10 +8,13 @@ import NotFoundError from "../Middleware/error/NotFoundError";
 
 //TODO: add TeamleaderAuthentification
 
+// REVIEW: All this code should be able to be executed by the teamleader of the team the participant is in AND
+//         an admin the group of whom overlaps with the team AND an elevated admin
+
 const ParticipantBody = z.object({
     firstName: z.string(),
     lastName: z.string(),
-    groupId: z.string(),
+    groupId: z.string().uuid(),
     //job: z.enum(["TEAMLEADER", "MEMBER"]),
 });
 
@@ -30,6 +33,7 @@ const returnedParticipant = {
     } },
 } as const;
 
+// REVIEW: Location of this endpoints (/groups, /teams, /participants, ...?)
 export const createParticipant = async (req: Request<{ pid: string}>, res: Response) => {
     //insert TeamleaderAuth
 
@@ -41,7 +45,7 @@ export const createParticipant = async (req: Request<{ pid: string}>, res: Respo
                 firstname: DataType.STRING,
                 lastName: DataType.STRING,
                 groupId: DataType.UUID,
-            })
+            }, result.error)
         );
     }
 
@@ -62,7 +66,7 @@ export const createParticipant = async (req: Request<{ pid: string}>, res: Respo
 
         return res.status(201).json({
             type: "success",
-            payload: participant,
+            payload: { participant },
         });
     } catch (e) {
         if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
@@ -75,7 +79,7 @@ export const createParticipant = async (req: Request<{ pid: string}>, res: Respo
 export const updateParticipant = async (req: Request<{ pid: string }>, res: Response) => {
     //insert TeamleaderAuth
 
-    const result = ParticipantBody.safeParse(req.body);
+    const result = ParticipantBody.partial().safeParse(req.body); // Should be partial, right?
 
     if(result.success === false){
         return res.status(400).json(
@@ -83,7 +87,7 @@ export const updateParticipant = async (req: Request<{ pid: string }>, res: Resp
                 firstname: DataType.STRING,
                 lastName: DataType.STRING,
                 groupId: DataType.UUID,
-            })
+            }, result.error)
         );
     }
 
@@ -101,38 +105,16 @@ export const updateParticipant = async (req: Request<{ pid: string }>, res: Resp
             select: returnedParticipant,
         });
     
-        if(!participant) {
-            throw new NotFoundError("participant", pid);
-        }
-    
         res.status(200).json({
             type: "success",
-            payload: participant,
+            payload: { participant },
         });
     
     } catch (e) {
-        if (e instanceof Prisma.PrismaClientKnownRequestError) {
-            return res.status(500).json({
-              type: "error",
-              payload: {
-                message: `Internal Server error occured. Try again later`,
-              },
-            });
+        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+            throw new NotFoundError("participant", pid)
           }
-          if (e instanceof Prisma.PrismaClientUnknownRequestError) {
-            return res.status(500).json({
-              type: "error",
-              payload: {
-                message: "Unknown error occurred with your request. Check if your parameters are correct",
-                schema: {
-                    firstname: DataType.STRING,
-                    lastName: DataType.STRING,
-                    groupId: DataType.UUID,
-                },
-              },
-            });
-          }
-      
+                
           throw e;
     }
 }

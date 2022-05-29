@@ -6,11 +6,13 @@ import prisma from "../lib/prisma";
 import NotFoundError from "../Middleware/error/NotFoundError";
 import { createInsufficientPermissionsError, DataType, generateError, generateInvalidBodyError, genericError, handleCreateByName } from "./common";
 
-const updateGroupBody = z.object({
-  name: z.string(),
-  user_limit: z.number(),
-  level: z.number(),
-}).partial();
+const updateGroupBody = z
+  .object({
+    name: z.string().min(1),
+    user_limit: z.number().int().positive(),
+    level: z.number().int().nonnegative(),
+  })
+  .partial();
 
 const basicGroup = {
   pid: true,
@@ -131,11 +133,14 @@ export const updateGroup = async (req: Request<{ pid: string }>, res: Response) 
 
   if(result.success === false){
       return res.status(400).json(
-          generateInvalidBodyError({
-              name: DataType.STRING,
-              user_limit: DataType.NUMBER,
-              level: DataType.NUMBER,
-          })
+        generateInvalidBodyError(
+          {
+            name: DataType.STRING,
+            user_limit: DataType.NUMBER,
+            level: DataType.NUMBER,
+          },
+          result.error
+        )
       );
   }
 
@@ -153,39 +158,17 @@ export const updateGroup = async (req: Request<{ pid: string }>, res: Response) 
           select: basicGroup,
       });
   
-      if(!group) {
-          throw new NotFoundError("group", pid);
-      }
-  
       res.status(200).json({
           type: "success",
-          payload: group,
+          payload: { group },
       });
   
   } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError) {
-          return res.status(500).json({
-            type: "error",
-            payload: {
-              message: `Internal Server error occured. Try again later`,
-            },
-          });
-        }
-        if (e instanceof Prisma.PrismaClientUnknownRequestError) {
-          return res.status(500).json({
-            type: "error",
-            payload: {
-              message: "Unknown error occurred with your request. Check if your parameters are correct",
-              schema: {
-                name: DataType.STRING,
-                user_limit: DataType.NUMBER,
-                level: DataType.NUMBER,
-              },
-            },
-          });
-        }
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+          throw new NotFoundError("group", pid)
+      }
     
-        throw e;
+      throw e;
   }
 }
 
@@ -206,7 +189,7 @@ export const deleteGroup = async (req: Request<DeleteGroupQueryParams>, res: Res
     return res.status(204).end();
   } catch (e) {
     if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
-      return res.status(404).json(generateError(`The group with the ID ${pid} could not be found`));
+      throw new NotFoundError("group", pid)
     }
 
     throw e;

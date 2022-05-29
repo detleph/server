@@ -12,8 +12,17 @@ import { type } from "os";
 import { unlink } from "fs/promises";
 import ForwardableError from "../Middleware/error/ForwardableError";
 import SchemaError from "../Middleware/error/SchemaError";
+import { z } from "zod";
+import { updateEvent } from "./event.controller";
 
 require("express-async-errors");
+
+const linkMediaBody = z.object({
+  tableToUpdate: z.enum(["EVENT", "ROLE_SCHEMA", "DISCIPLINE"]),
+  mediaPid: z.string(),
+});
+
+const unlinkMediaBody = linkMediaBody.omit({ mediaPid: true, });
 
 function createMediaLinks(fileName: string) {
   return [{ rel: "self", type: "GET", href: `/api/media/${fileName}` }];
@@ -189,3 +198,89 @@ export const deleteMedia = async (req: Request, res: Response) => {
     throw e;
   }
 };
+
+//TODO: maybe create a function that adds the tableToUpdate based on path
+// and call it before calling (un)linkMedia 
+
+export const linkMedia = async (
+  req: Request<{ pid: string }, {}, { mediaPid: string, tableToUpdate: string }>, 
+  res: Response) => {
+  if (req.auth?.permission_level != "ELEVATED") {
+    res.status(403).json(createInsufficientPermissionsError());
+  }
+
+  const zBody = linkMediaBody.safeParse(req.body);
+
+  if(zBody.success === false) {
+    return res.status(400).json(
+      generateInvalidBodyError({
+        mediaPid: DataType.UUID,
+        tableToUpdate: DataType.STRING,
+      })
+    );
+  }
+
+  const { pid } = req.params;
+  const { mediaPid, tableToUpdate } = zBody.data;
+
+  const updatedRec = await getPrismaUpdateFKT(tableToUpdate)({
+    where: { pid },
+    data: {
+      visual: { connect: { pid: mediaPid } },
+    },
+  });
+
+  if (!updatedRec) {
+    throw new NotFoundError(tableToUpdate, pid);
+  }
+
+  return res.status(200).json({
+    type: "success",
+    payload: {},
+  });
+};
+
+export const unlinkMedia = async (
+  req: Request<{ pid: string, mediaPid: string }, {}, { tableToUpdate: string }>, 
+  res: Response) => {
+  if (req.auth?.permission_level != "ELEVATED") {
+    res.status(403).json(createInsufficientPermissionsError());
+  }
+
+  const zBody = linkMediaBody.safeParse(req.body);
+
+  if(zBody.success === false) {
+    return res.status(400).json(
+      generateInvalidBodyError({
+        mediaPid: DataType.UUID,
+        tableToUpdate: DataType.STRING,
+      })
+    );
+  }
+
+  const { pid } = req.params;
+  const { mediaPid, tableToUpdate } = zBody.data;
+
+  try {
+    await getPrismaUpdateFKT(tableToUpdate)({
+      where: pid,
+      data: { visual: { disconnect: { pid: mediaPid } },
+      },
+    });
+    return res.status(204).end();
+  } catch (e) {
+    if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
+      throw new NotFoundError(tableToUpdate, pid);
+    }
+
+    throw e;
+  }
+};
+
+function getPrismaUpdateFKT( tableToUpdate: string ): Function {
+  switch(tableToUpdate) {
+    case "EVENT": return prisma.event.update;
+    case "DISCIPLINE":  return prisma.discipline.update;
+    default: return prisma.roleSchema.update;
+  }
+}

@@ -158,4 +158,4 @@ export const deleteParticipant = async (req: Request<{ pid: string }>, res: Resp
       
           throw e;
     }
-} 
+}

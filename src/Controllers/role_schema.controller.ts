@@ -16,7 +16,7 @@ import {
 } from "./common";
 
 const RoleSchemaBody = z.object({
-  name: z.string(),
+  name: z.string().min(1),
   schema: z.string(),
 });
 
@@ -148,50 +148,31 @@ export const updateRoleSchema = async (req: Request<{ pid: string }>, res: Respo
       generateInvalidBodyError({
         name: DataType.STRING,
         schema: DataType.RESULT_SCHEMA,
-      })
+      }, result.error)
     );
   }
 
-  const body = result.data;
+  const {name, schema} = result.data;
+
+  const validatedSchema = parseSchema(schema);
 
   try {
     const schema = await prisma.roleSchema.update({
       where: { pid },
       data: {
-        name: body.name,
-        schema: body.schema,
+        name: name,
+        schema: validatedSchema,
       },
       select: roleSchema,
     });
-
-    if (!schema) {
-      throw new NotFoundError("schema", pid);
-    }
 
     res.status(200).json({
       type: "success",
       payload: schema,
     });
   } catch (e) {
-    if (e instanceof Prisma.PrismaClientKnownRequestError) {
-      return res.status(500).json({
-        type: "error",
-        payload: {
-          message: `Internal Server error occured. Try again later`,
-        },
-      });
-    }
-    if (e instanceof Prisma.PrismaClientUnknownRequestError) {
-      return res.status(500).json({
-        type: "error",
-        payload: {
-          message: "Unknown error occurred with your request. Check if your parameters are correct",
-          schema: {
-            name: DataType.STRING,
-            schema: DataType.RESULT_SCHEMA,
-          },
-        },
-      });
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+      throw new NotFoundError("roleSchema", pid)
     }
 
     throw e;

@@ -23,7 +23,7 @@ export async function createRolesForTeam(teamPid: string) {
   }
 
   const roles = await prisma.role.createMany({
-    data: schemas.map((schema) => ({ schemaId: schema.id, score: "", teamId })),
+    data: schemas.map((schema) => ({ schemaId: schema.id, score: "", teamId })), // TODO: Use default score from schema?
   });
 
   return roles.count;
@@ -61,7 +61,7 @@ export async function assignParticipantToRole(req: Request<{ pid: string }>, res
   const zBody = AssignParticipantToRoleBody.safeParse(req.body);
 
   if (zBody.success === false) {
-    return res.status(400).json(generateInvalidBodyError({ participant: DataType.UUID }));
+    return res.status(400).json(generateInvalidBodyError({ participantPid: DataType.UUID }, zBody.error));
   }
 
   const { participantPid } = zBody.data;
@@ -83,6 +83,7 @@ export async function assignParticipantToRole(req: Request<{ pid: string }>, res
     });
   }
 
+  // No error handling should be neccesary as the existence of the role and participant have already been checked above
   await prisma.role.update({ where: { pid: rolePid }, data: { participant: { connect: { pid: participantPid } } } });
 
   return res.status(200).json({
@@ -107,8 +108,6 @@ export const updateRoleScore = async (req: Request<{ pid: string }, {}, { score:
 
   const { pid } = req.params;
 
-  
-
   try {
     const role = await prisma.role.update({
       where: { pid },
@@ -132,10 +131,6 @@ export const updateRoleScore = async (req: Request<{ pid: string }, {}, { score:
       }
     });
   
-    if (!role) {
-      throw new NotFoundError("event", pid);
-    }
-  
     res.status(200).json({
       type: "success",
       payload: {
@@ -144,24 +139,8 @@ export const updateRoleScore = async (req: Request<{ pid: string }, {}, { score:
     });
 
   } catch (e) {
-    if (e instanceof Prisma.PrismaClientKnownRequestError) {
-      return res.status(500).json({
-        type: "error",
-        payload: {
-          message: `Internal Server error occured. Try again later`,
-        },
-      });
-    }
-    if (e instanceof Prisma.PrismaClientUnknownRequestError) {
-      return res.status(500).json({
-        type: "error",
-        payload: {
-          message: "Unknown error occurred with your request. Check if your parameters are correct",
-          schema: {
-            eventId: DataType.UUID,
-          },
-        },
-      });
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+      throw new NotFoundError("role", pid)
     }
 
     throw e;

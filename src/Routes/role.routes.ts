@@ -3,7 +3,7 @@ import { assignParticipantToRole, getRolesForTeam } from "../Controllers/role.co
 
 const router = Express.Router();
 
-//TO DO: maybe transfer getRolesForTeam to team router
+//TO DO: maybe transfer getRolesForTeam to team router -> Seconded
 router.get<"team/:teamPid/", { teamPid: string }>("team/:teamPid/", getRolesForTeam);
 
-router.patch<"/:pid/", { pid: string }>("/:pid/", assignParticipantToRole)
+router.put<"/:pid/participant", { pid: string }>("/:pid/participant", assignParticipantToRole);

@@ -9,12 +9,12 @@ import { createRolesForTeam } from "./role.controller";
 import { z } from "zod";
 
 const TeamBody = z.object({
-  teamName: z.string(),
-  leaderEmail: z.string(),
-  disciplineId: z.string(),
-  partFirstName: z.string(),
-  partLastName: z.string(),
-  partGroupId: z.string(),
+  teamName: z.string().min(1),
+  leaderEmail: z.string().email(),
+  disciplineId: z.string().uuid(),
+  partFirstName: z.string().min(1),
+  partLastName: z.string().min(1),
+  partGroupId: z.string().uuid(),
 })
 
 interface CreateTeamBody {
@@ -26,22 +26,22 @@ interface CreateTeamBody {
   partGroupId: string;
 }
 
+// TODO: Some kind of auth (Teamleader probably)
 export const register = async (req: Request<{}, {}, CreateTeamBody>, res: Response) => {
   
   const result = TeamBody.safeParse(req.body);
 
   if (result.success === false) {
-    res.status(400).json(
+    return res.status(400).json(
       generateInvalidBodyError({
         teamName: DataType.STRING,
         leaderEmail: DataType.STRING,
-        disciplineId: DataType.STRING,
+        disciplineId: DataType.UUID,
         partFirstName: DataType.STRING,
         partLastName: DataType.STRING,
-        partGroupId: DataType.STRING,
-      })
+        partGroupId: DataType.UUID,
+      }, result.error)
     );
-    return;
   }
 
   const body = result.data;

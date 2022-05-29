@@ -1,10 +1,10 @@
-import { Role } from "@prisma/client";
+import { Prisma, Role } from "@prisma/client";
 import { Request, Response } from "express";
 import { z } from "zod";
 import prisma from "../lib/prisma";
 import { requireLeaderOfTeam, requireResponsibleForParticipant } from "../Middleware/auth/teamleaderAuth";
 import NotFoundError from "../Middleware/error/NotFoundError";
-import { DataType, generateInvalidBodyError } from "./common";
+import { createInsufficientPermissionsError, DataType, generateInvalidBodyError } from "./common";
 
 require("express-async-errors");
 
@@ -92,6 +92,80 @@ export async function assignParticipantToRole(req: Request<{ pid: string }>, res
       ...(schema.participant ? { unassigned: schema.participant } : {}),
     },
   });
+}
+
+export const updateRoleScore = async (req: Request<{ pid: string }, {}, { score: string }>, res: Response) => {
+  if (req.auth?.permission_level != "ELEVATED") {
+    res.status(403).json(createInsufficientPermissionsError());
+  }
+
+  const { score } = req.body;
+
+  if(typeof score !== "string"){
+    res.status(400).json(generateInvalidBodyError({ score: DataType.STRING }));
+  }
+
+  const { pid } = req.params;
+
+  
+
+  try {
+    const role = await prisma.role.update({
+      where: { pid },
+      data: { score },
+      select: {
+        pid: true,
+        score: true,
+        schema: { select: {
+            pid: true,
+            name: true,
+          } },
+        participant: { select: { 
+          pid: true,
+          firstName: true,
+          lastName: true,
+        } },
+        team: { select: {
+          pid: true,
+          name: true,
+        }}
+      }
+    });
+  
+    if (!role) {
+      throw new NotFoundError("event", pid);
+    }
+  
+    res.status(200).json({
+      type: "success",
+      payload: {
+        role,
+      },
+    });
+
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError) {
+      return res.status(500).json({
+        type: "error",
+        payload: {
+          message: `Internal Server error occured. Try again later`,
+        },
+      });
+    }
+    if (e instanceof Prisma.PrismaClientUnknownRequestError) {
+      return res.status(500).json({
+        type: "error",
+        payload: {
+          message: "Unknown error occurred with your request. Check if your parameters are correct",
+          schema: {
+            eventId: DataType.UUID,
+          },
+        },
+      });
+    }
+
+    throw e;
+  }
 }
 
 export async function deleteRolesFromTeam(teamPid: string){

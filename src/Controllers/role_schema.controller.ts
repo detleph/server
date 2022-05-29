@@ -9,6 +9,7 @@ import SchemaError from "../Middleware/error/SchemaError";
 import {
   createInsufficientPermissionsError,
   DataType,
+  generateError,
   generateInvalidBodyError,
   NAME_ERROR,
   validateName,
@@ -196,6 +197,25 @@ export const updateRoleSchema = async (req: Request<{ pid: string }>, res: Respo
     throw e;
   }
 };
+
+export const deleteRoleSchema = async (req: Request<{ pid: string }>, res: Response) => {
+  if (req.auth?.permission_level !== "ELEVATED") {
+    res.status(403).json(createInsufficientPermissionsError());
+  }
+
+  const { pid } = req.params;
+
+  try {
+    await prisma.roleSchema.delete({ where: { pid } });
+
+    return res.status(204).end();
+  } catch (e) {
+    if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
+      return res.status(404).json(generateError(`The RoleSchema with the ID ${pid} could not be found`));
+    }
+
+    throw e;
+  }
 
 interface visualParams {
   schemaPid: string;

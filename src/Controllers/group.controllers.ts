@@ -1,12 +1,21 @@
-import { Admin } from "@prisma/client";
+import { Admin, Prisma } from "@prisma/client";
 import { PrismaClientKnownRequestError, PrismaClientUnknownRequestError } from "@prisma/client/runtime";
 import { Request, Response } from "express";
+import { z } from "zod";
 import prisma from "../lib/prisma";
-import { createInsufficientPermissionsError, generateError, genericError, handleCreateByName } from "./common";
+import NotFoundError from "../Middleware/error/NotFoundError";
+import { createInsufficientPermissionsError, DataType, generateError, generateInvalidBodyError, genericError, handleCreateByName } from "./common";
+
+const updateGroupBody = z.object({
+  name: z.string(),
+  user_limit: z.number(),
+  level: z.number(),
+}).partial();
 
 const basicGroup = {
   pid: true,
   name: true,
+  level: true,
   organisation: { select: { pid: true, name: true } },
 } as const;
 
@@ -114,6 +123,71 @@ export const createGroup = async (req: Request<{ organisationPid: string }, {}, 
     res
   );
 };
+
+export const updateGroup = async (req: Request<{ pid: string }>, res: Response) => {
+  //insert TeamleaderAuth
+
+  const result = updateGroupBody.safeParse(req.body);
+
+  if(result.success === false){
+      return res.status(400).json(
+          generateInvalidBodyError({
+              name: DataType.STRING,
+              user_limit: DataType.NUMBER,
+              level: DataType.NUMBER,
+          })
+      );
+  }
+
+  const body = result.data;
+  const { pid } = req.params;
+
+  try {
+      const group = await prisma.group.update({
+          where: { pid },
+          data: {
+              name: body.name,
+              user_limit: body.user_limit,
+              level: body.level,
+          },
+          select: basicGroup,
+      });
+  
+      if(!group) {
+          throw new NotFoundError("group", pid);
+      }
+  
+      res.status(200).json({
+          type: "success",
+          payload: group,
+      });
+  
+  } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+          return res.status(500).json({
+            type: "error",
+            payload: {
+              message: `Internal Server error occured. Try again later`,
+            },
+          });
+        }
+        if (e instanceof Prisma.PrismaClientUnknownRequestError) {
+          return res.status(500).json({
+            type: "error",
+            payload: {
+              message: "Unknown error occurred with your request. Check if your parameters are correct",
+              schema: {
+                name: DataType.STRING,
+                user_limit: DataType.NUMBER,
+                level: DataType.NUMBER,
+              },
+            },
+          });
+        }
+    
+        throw e;
+  }
+}
 
 interface DeleteGroupQueryParams {
   pid: string;

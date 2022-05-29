@@ -3,6 +3,7 @@ import { PrismaClientKnownRequestError, PrismaClientUnknownRequestError } from "
 import { Request, Response } from "express";
 import { z } from "zod";
 import prisma from "../lib/prisma";
+import { requireResponsibleForGroup } from "../Middleware/auth/auth";
 import NotFoundError from "../Middleware/error/NotFoundError";
 import { createInsufficientPermissionsError, DataType, generateError, generateInvalidBodyError, genericError, handleCreateByName } from "./common";
 
@@ -126,9 +127,8 @@ export const createGroup = async (req: Request<{ organisationPid: string }, {}, 
   );
 };
 
+// requires: auth(STANDARD with GROUP permission)
 export const updateGroup = async (req: Request<{ pid: string }>, res: Response) => {
-  //insert TeamleaderAuth
-
   const result = updateGroupBody.safeParse(req.body);
 
   if(result.success === false){
@@ -146,6 +146,8 @@ export const updateGroup = async (req: Request<{ pid: string }>, res: Response) 
 
   const body = result.data;
   const { pid } = req.params;
+
+  requireResponsibleForGroup(req.auth, pid)
 
   try {
       const group = await prisma.group.update({

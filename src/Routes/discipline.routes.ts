@@ -17,7 +17,7 @@ router.get("/", getAllDisciplines); // TODO: Optional auth
 
 router.get("/:pid", getDiscipline);
 
-router.put("/:pid", requireAuthentication, updateDiscipline);
+router.patch("/:pid", requireAuthentication, updateDiscipline);
 router.delete<"/:pid", { pid: string }>("/:pid", requireAuthentication, deleteDiscipline);
 
 router.post<"/:disciplinePid/images", { disciplinePid: string }>(

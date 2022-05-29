@@ -1,10 +1,11 @@
 /// <reference path="../../custom.d.ts" />
 
 import { NextFunction, Request, Response } from "express";
-import { AuthJWTPayload } from "../../Controllers/admin_auth.controller";
+import { authenticateUser, AuthJWTPayload } from "../../Controllers/admin_auth.controller";
 import { authClient } from "../../lib/redis";
 import jwt, { JsonWebTokenError, JwtPayload } from "jsonwebtoken";
 import prisma from "../../lib/prisma";
+import AuthError from "../error/AuthError";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -92,3 +93,13 @@ export const requireAuthentication = async (req: Request, res: Response, next: N
 
   next();
 };
+
+export function requireResponsibleForGroup(auth: AuthJWTPayload | undefined, groupPid: string) {
+  if (auth?.permission_level === "ELEVATED") {
+    return;
+  }
+
+  if (!auth?.groups.includes(groupPid)) {
+    throw new AuthError("The provided authorization is not valid for the requested operation!");
+  }
+}

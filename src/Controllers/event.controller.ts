@@ -164,7 +164,7 @@ export const updateEvent = async (req: Request<{ pid: string }>, res: Response) 
         date: DataType.DATETIME,
         briefDescription: DataType.STRING,
         ["fullDescription?"]: DataType.STRING,
-      })
+      }, result.error)
     );
   }
 

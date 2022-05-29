@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import { Request, Response } from "express";
+import { z } from "zod";
 import prisma from "../lib/prisma";
 import { DurationSchemaT, parseSchema, PointSchemaT } from "../lib/result_schema";
 import NotFoundError from "../Middleware/error/NotFoundError";
@@ -13,7 +14,15 @@ import {
   validateName,
 } from "./common";
 
+const RoleSchemaBody = z.object({
+  name: z.string(),
+  schema: z.string(),
+});
+
+const UpdateRoleSchema = RoleSchemaBody.partial();
+
 const roleSchema = {
+  pid: true,
   name: true,
   schema: true,
   discipline: { select: { pid: true, name: true } },
@@ -118,6 +127,70 @@ export const createRoleSchema = async (
   } catch (e) {
     if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
       throw new NotFoundError("discipline", req.params.disciplinePid);
+    }
+
+    throw e;
+  }
+};
+
+export const updateRoleSchema = async (req: Request<{ pid: string }>, res: Response) => {
+  if (req.auth?.permission_level !== "ELEVATED") {
+    res.status(403).json(createInsufficientPermissionsError());
+  }
+
+  const { pid } = req.params;
+
+  const result = UpdateRoleSchema.safeParse(req.body);
+
+  if (result.success === false) {
+    return res.status(400).json(
+      generateInvalidBodyError({
+        name: DataType.STRING,
+        schema: DataType.RESULT_SCHEMA,
+      })
+    );
+  }
+
+  const body = result.data;
+
+  try {
+    const schema = await prisma.roleSchema.update({
+      where: { pid },
+      data: {
+        name: body.name,
+        schema: body.schema,
+      },
+      select: roleSchema,
+    });
+
+    if (!schema) {
+      throw new NotFoundError("schema", pid);
+    }
+
+    res.status(200).json({
+      type: "success",
+      payload: schema,
+    });
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError) {
+      return res.status(500).json({
+        type: "error",
+        payload: {
+          message: `Internal Server error occured. Try again later`,
+        },
+      });
+    }
+    if (e instanceof Prisma.PrismaClientUnknownRequestError) {
+      return res.status(500).json({
+        type: "error",
+        payload: {
+          message: "Unknown error occurred with your request. Check if your parameters are correct",
+          schema: {
+            name: DataType.STRING,
+            schema: DataType.RESULT_SCHEMA,
+          },
+        },
+      });
     }
 
     throw e;

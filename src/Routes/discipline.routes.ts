@@ -7,6 +7,7 @@ import {
   deleteVisual,
   getAllDisciplines,
   getDiscipline,
+  updateDiscipline,
 } from "../Controllers/discipline.controller";
 import { requireAuthentication } from "../Middleware/auth/auth";
 
@@ -16,6 +17,7 @@ router.get("/", getAllDisciplines); // TODO: Optional auth
 
 router.get("/:pid", getDiscipline);
 
+router.put("/:pid", requireAuthentication, updateDiscipline);
 router.delete<"/:pid", { pid: string }>("/:pid", requireAuthentication, deleteDiscipline);
 
 router.post<"/:disciplinePid/images", { disciplinePid: string }>(

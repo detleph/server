@@ -16,13 +16,19 @@ import {
 
 require("express-async-errors");
 
-const DisciplineBody = z.object({
-  name: z.string(),
+const InitialDisciplineBody = z.object({
+  name: z.string().min(1),
   minTeamSize: z.number(),
   maxTeamSize: z.number(),
-})
+});
 
-const updateDisciplineBody = DisciplineBody.partial();
+const disciplineRefiner = [
+  (args: any) => (args.minTeamSize && args.maxTeamSize ? args.minTeamSize <= args.maxTeamSize : true),
+  { message: "The minTeamSize must be smaller or equal to the maxTeamSize" },
+] as const;
+
+const DisciplineBody = InitialDisciplineBody.refine(...disciplineRefiner);
+const updateDisciplineBody = InitialDisciplineBody.partial().refine(...disciplineRefiner);
 
 const basicDiscipline = {
   pid: true,
@@ -137,21 +143,20 @@ export const createDiscipline = async (req: Request<{ eventPid: string }, {}, Cr
 
   const result = DisciplineBody.safeParse(req.body);
 
-  if(result.success === false) {
+  if (result.success === false) {
     return res.status(400).json(
-      generateInvalidBodyError({
-        name: DataType.STRING,
-        minTeamSize: DataType.NUMBER,
-        maxTeamSize: DataType.NUMBER,
-      })
+      generateInvalidBodyError(
+        {
+          name: DataType.STRING,
+          minTeamSize: DataType.NUMBER,
+          maxTeamSize: DataType.NUMBER,
+        },
+        result.error
+      )
     );
   }
 
   const { name, minTeamSize, maxTeamSize } = result.data;
-
-  if (!validateName(name)) {
-    return res.status(400).json(NAME_ERROR);
-  }
 
   try {
     const discipline = await prisma.discipline.create({
@@ -168,72 +173,53 @@ export const createDiscipline = async (req: Request<{ eventPid: string }, {}, Cr
   }
 };
 
-export const updateDiscipline = async (req: Request<{ eventPid: string }, {}, CreateDisciplineBody>, res: Response) => {
+// requires: auth(ELEVATED)
+export const updateDiscipline = async (req: Request<{ pid: string }>, res: Response) => {
   if (req.auth?.permission_level !== "ELEVATED") {
     res.status(403).json(createInsufficientPermissionsError());
   }
 
-  const result = updateDisciplineBody.safeParse(req.body);
+  const result = updateDisciplineBody.safeParse(req.body); // FIXME: Useres can currently use two requests to forgo min/max team size checking altogether
 
-    if(result.success === false){
-        return res.status(400).json(
-            generateInvalidBodyError({
-              name: DataType.STRING,
-              minTeamSize: DataType.NUMBER,
-              maxTeamSize: DataType.NUMBER,
-            })
-        );
+  if (result.success === false) {
+    return res.status(400).json(
+      generateInvalidBodyError(
+        {
+          name: DataType.STRING,
+          minTeamSize: DataType.NUMBER,
+          maxTeamSize: DataType.NUMBER,
+        },
+        result.error
+      )
+    );
+  }
+
+  const body = result.data;
+  const { pid } = req.params;
+
+  try {
+    const discipline = await prisma.discipline.update({
+      where: { pid },
+      data: {
+        name: body.name,
+        minTeamSize: body.minTeamSize,
+        maxTeamSize: body.maxTeamSize,
+      },
+      select: basicDiscipline,
+    });
+
+    res.status(200).json({
+      type: "success",
+      payload: { discipline },
+    });
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+      throw new NotFoundError("discipline", pid);
     }
 
-    const body = result.data;
-    const { eventPid } = req.params;
-
-    try {
-        const discipline = await prisma.discipline.update({
-            where: { pid: eventPid },
-            data: {
-                name: body.name,
-                minTeamSize: body.minTeamSize,
-                maxTeamSize: body.maxTeamSize,
-            },
-            select: basicDiscipline,
-        });
-    
-        if(!discipline) {
-            throw new NotFoundError("discipline", eventPid);
-        }
-    
-        res.status(200).json({
-            type: "success",
-            payload: discipline,
-        });
-    
-    } catch (e) {
-        if (e instanceof Prisma.PrismaClientKnownRequestError) {
-            return res.status(500).json({
-              type: "error",
-              payload: {
-                message: `Internal Server error occured. Try again later`,
-              },
-            });
-          }
-          if (e instanceof Prisma.PrismaClientUnknownRequestError) {
-            return res.status(500).json({
-              type: "error",
-              payload: {
-                message: "Unknown error occurred with your request. Check if your parameters are correct",
-                schema: {
-                  name: DataType.STRING,
-                  minTeamSize: DataType.NUMBER,
-                  maxTeamSize: DataType.NUMBER,
-                },
-              },
-            });
-          }
-      
-          throw e;
-    }
-}
+    throw e;
+  }
+};
 
 // requires: auth(ELEVATED)
 export const deleteDiscipline = async (req: Request<{ pid: string }>, res: Response) => {
@@ -278,6 +264,8 @@ export const addVisual = async (req: Request<visualParams, {}, visualBody>, res:
     },
   });
 
+  // TODO: This does not work and should be updated in all addVisual-type code segments
+  //       Reason: update throw a PrismaClientKnownRequestError with code P2025 if the record to update could not be found
   if (!discipline) {
     throw new NotFoundError("discipline", disciplinePid);
   }
@@ -307,7 +295,7 @@ export const deleteVisual = async (req: Request<visualParams & { pid: string }>,
     return res.status(204).end();
   } catch (e) {
     if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
-      throw new NotFoundError("discipline", disciplinePid);
+      throw new NotFoundError("discipline", disciplinePid); // Refer: Last todo; This is a correct example
     }
 
     throw e;

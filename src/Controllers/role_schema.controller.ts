@@ -216,6 +216,7 @@ export const deleteRoleSchema = async (req: Request<{ pid: string }>, res: Respo
 
     throw e;
   }
+}
 
 interface visualParams {
   schemaPid: string;

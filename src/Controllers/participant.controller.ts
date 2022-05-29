@@ -12,12 +12,8 @@ const ParticipantBody = z.object({
     firstName: z.string(),
     lastName: z.string(),
     groupId: z.string(),
-    job: z.enum(["TEAMLEADER", "MEMBER"]),
+    //job: z.enum(["TEAMLEADER", "MEMBER"]),
 });
-
-const updateParticipantBody = ParticipantBody.omit({
-    job: true,
-}).partial();
 
 const returnedParticipant = {
     pid: true,
@@ -45,7 +41,6 @@ export const createParticipant = async (req: Request<{ pid: string}>, res: Respo
                 firstname: DataType.STRING,
                 lastName: DataType.STRING,
                 groupId: DataType.UUID,
-                job: DataType.JOB,
             })
         );
     }
@@ -58,7 +53,7 @@ export const createParticipant = async (req: Request<{ pid: string}>, res: Respo
             data: {
                 firstName: body.firstName,
                 lastName: body.lastName,
-                relevance: body.job, 
+                relevance: "MEMBER", 
                 group: { connect: { pid: body.groupId } },
                 team: { connect: { pid } },
             },
@@ -80,7 +75,7 @@ export const createParticipant = async (req: Request<{ pid: string}>, res: Respo
 export const updateParticipant = async (req: Request<{ pid: string }>, res: Response) => {
     //insert TeamleaderAuth
 
-    const result = updateParticipantBody.safeParse(req.body);
+    const result = ParticipantBody.safeParse(req.body);
 
     if(result.success === false){
         return res.status(400).json(

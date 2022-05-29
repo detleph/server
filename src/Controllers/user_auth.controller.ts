@@ -6,31 +6,60 @@ import { verificationMail } from "../lib/mail";
 import { DataType, generateInvalidBodyError } from "./common";
 import { generateTeamleaderJWT } from "../Middleware/auth/teamleaderAuth";
 import { createRolesForTeam } from "./role.controller";
+import { z } from "zod";
+
+const TeamBody = z.object({
+  teamName: z.string(),
+  leaderEmail: z.string(),
+  disciplineId: z.string(),
+  partFirstName: z.string(),
+  partLastName: z.string(),
+  partGroupId: z.string(),
+})
 
 interface CreateTeamBody {
-  name: string;
+  teamName: string;
   leaderEmail: string;
   disciplineId: string;
+  partFirstName: string;
+  partLastName: string;
+  partGroupId: string;
 }
 
 export const register = async (req: Request<{}, {}, CreateTeamBody>, res: Response) => {
-  if (req.body.name == null || req.body.disciplineId == null || req.body.leaderEmail == null) {
+  
+  const result = TeamBody.safeParse(req.body);
+
+  if (result.success === false) {
     res.status(400).json(
       generateInvalidBodyError({
-        name: DataType.STRING,
+        teamName: DataType.STRING,
         leaderEmail: DataType.STRING,
         disciplineId: DataType.STRING,
+        partFirstName: DataType.STRING,
+        partLastName: DataType.STRING,
+        partGroupId: DataType.STRING,
       })
     );
     return;
   }
 
+  const body = result.data;
+
   const team = await prisma.team.create({
     data: {
-      leaderEmail: req.body.leaderEmail,
-      name: req.body.name,
+      leaderEmail: body.leaderEmail,
+      name: body.teamName,
       roles: undefined,
-      discipline: { connect: { pid: req.body.disciplineId } },
+      discipline: { connect: { pid: body.disciplineId } },
+      participants: {
+        create: {
+          firstName: body.partFirstName,
+          lastName: body.partLastName,
+          relevance: "TEAMLEADER",
+          group: { connect: { pid: body.partGroupId } },
+        }
+      }
     },
     select: {
       pid: true,

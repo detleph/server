@@ -102,7 +102,7 @@ export const updateRoleScore = async (req: Request<{ pid: string }, {}, { score:
 
   const { score } = req.body;
 
-  if(typeof score !== "string"){
+  if (typeof score !== "string") {
     res.status(400).json(generateInvalidBodyError({ score: DataType.STRING }));
   }
 
@@ -115,40 +115,45 @@ export const updateRoleScore = async (req: Request<{ pid: string }, {}, { score:
       select: {
         pid: true,
         score: true,
-        schema: { select: {
+        schema: {
+          select: {
             pid: true,
             name: true,
-          } },
-        participant: { select: { 
-          pid: true,
-          firstName: true,
-          lastName: true,
-        } },
-        team: { select: {
-          pid: true,
-          name: true,
-        }}
-      }
+          },
+        },
+        participant: {
+          select: {
+            pid: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        team: {
+          select: {
+            pid: true,
+            name: true,
+          },
+        },
+      },
     });
-  
+
     res.status(200).json({
       type: "success",
       payload: {
         role,
       },
     });
-
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
-      throw new NotFoundError("role", pid)
+      throw new NotFoundError("role", pid);
     }
 
     throw e;
   }
-}
+};
 
-export async function deleteRolesFromTeam(teamPid: string){
+export async function deleteRolesFromTeam(teamPid: string) {
   await prisma.role.deleteMany({
-    where: { team: { pid: teamPid, } }
+    where: { team: { pid: teamPid } },
   });
 }

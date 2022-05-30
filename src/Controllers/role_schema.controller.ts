@@ -145,14 +145,17 @@ export const updateRoleSchema = async (req: Request<{ pid: string }>, res: Respo
 
   if (result.success === false) {
     return res.status(400).json(
-      generateInvalidBodyError({
-        name: DataType.STRING,
-        schema: DataType.RESULT_SCHEMA,
-      }, result.error)
+      generateInvalidBodyError(
+        {
+          name: DataType.STRING,
+          schema: DataType.RESULT_SCHEMA,
+        },
+        result.error
+      )
     );
   }
 
-  const {name, schema} = result.data;
+  const { name, schema } = result.data;
 
   const validatedSchema = parseSchema(schema);
 
@@ -172,7 +175,7 @@ export const updateRoleSchema = async (req: Request<{ pid: string }>, res: Respo
     });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
-      throw new NotFoundError("roleSchema", pid)
+      throw new NotFoundError("roleSchema", pid);
     }
 
     throw e;
@@ -197,7 +200,7 @@ export const deleteRoleSchema = async (req: Request<{ pid: string }>, res: Respo
 
     throw e;
   }
-}
+};
 
 interface visualParams {
   schemaPid: string;

@@ -159,12 +159,15 @@ export const updateEvent = async (req: Request<{ pid: string }>, res: Response) 
 
   if (result.success === false) {
     return res.status(400).json(
-      generateInvalidBodyError({
-        name: DataType.STRING,
-        date: DataType.DATETIME,
-        briefDescription: DataType.STRING,
-        ["fullDescription?"]: DataType.STRING,
-      }, result.error)
+      generateInvalidBodyError(
+        {
+          name: DataType.STRING,
+          date: DataType.DATETIME,
+          briefDescription: DataType.STRING,
+          ["fullDescription?"]: DataType.STRING,
+        },
+        result.error
+      )
     );
   }
 

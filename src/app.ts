@@ -14,6 +14,7 @@ import logger from "./Middleware/error/logger";
 import debugLogger from "./Middleware/debug/logger";
 import mediaRouter from "./Routes/media.routes";
 import userRouter from "./Routes/user_auth.routes";
+import TeamRouter from "./Routes/team.routes";
 import { notFoundHandler, rootHandler } from "./Middleware/error/defaultRoutes";
 
 // Set up async error handling
@@ -85,6 +86,8 @@ async function main() {
   app.use("/api/media", mediaRouter);
 
   app.use("/api/users", userRouter);
+
+  app.use("/api/teams", TeamRouter);
 
   app.get("/", rootHandler);
   app.get("/api", rootHandler);

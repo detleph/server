@@ -3,10 +3,10 @@ import prisma from "../lib/prisma";
 import { mailClient } from "../lib/redis";
 import { nanoid } from "nanoid";
 import { verificationMail } from "../lib/mail";
-import { DataType, generateInvalidBodyError } from "./common";
-import { generateTeamleaderJWT } from "../Middleware/auth/teamleaderAuth";
+import { createInsufficientPermissionsError, DataType, generateInvalidBodyError } from "./common";
+import { generateTeamleaderJWT, requireLeaderOfTeam } from "../Middleware/auth/teamleaderAuth";
 import { createRolesForTeam } from "./role.controller";
-import { z } from "zod";
+import { any, z } from "zod";
 
 const TeamBody = z.object({
   teamName: z.string().min(1),
@@ -142,5 +142,12 @@ export const verifyEmail = async (req: Request, res: Response) => {
 
   mailClient.set(code, "");
 
-  res.status(200).json({ type: "succes", payload: { token: generateTeamleaderJWT(team) } }); //TODO: This needs to set a cookie or smth so that the client also gets this info
+  const token = generateTeamleaderJWT(team);
+
+  res.cookie("teamLeaderToken", token, {
+    path: "/",
+    maxAge: 1000 * 60 * 60 * 24 * 4,
+  });
+
+  res.status(200).json({ type: "succes", payload: { token } }); //TODO: This needs to set a cookie or smth so that the client also gets this info
 };

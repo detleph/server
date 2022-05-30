@@ -23,55 +23,67 @@ export function generateTeamleaderJWT(teamleader: Team) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: "4 days" });
 }
 
-export async function requireTeamleaderAuthentication(req: Request, res: Response, next: NextFunction) {
-  if (!JWT_SECRET) {
-    throw new Error("JWT_SECRET not set");
-  }
+export const _requireTeamleaderAuthentication =
+  (config: { optional: Boolean; controlled: Boolean } = { optional: false, controlled: false }) =>
+  (req: Request, res: Response, next: NextFunction) => {
+    if (!JWT_SECRET) {
+      throw new Error("JWT_SECRET not set");
+    }
 
-  const { authorization } = req.headers;
+    const { authorization } = req.headers;
 
-  if (!authorization) {
-    return res.status(403).send({
-      type: "error",
-      payload: {
-        message:
-          "The request did not include the Authorization header (Only the team leader can perform this operation)",
-      },
-    });
-  }
+    if (!authorization) {
+      if (config.optional) {
+        return false;
+      }
 
-  if (!verifyAuthorizationFormat(authorization)) {
-    return res.status(400).send({
-      type: "error",
-      payload: {
-        message: "Malformed Authorization header",
-        format: "Bearer <token>",
-      },
-    });
-  }
-
-  try {
-    const token_payload = jwt.verify(getBearerToken(authorization), JWT_SECRET) as TeamleaderJWTPayload;
-
-    req.teamleader = {
-      isAuthenticated: true,
-      team: token_payload.team,
-    };
-
-    next();
-  } catch (e) {
-    if (e instanceof JsonWebTokenError) {
-      return res.status(403).json({
+      return res.status(403).send({
         type: "error",
         payload: {
-          message: "Token could not be verified; It might be expired",
+          message:
+            "The request did not include the Authorization header (Only the team leader can perform this operation)",
         },
       });
     }
-  }
 
-  throw e;
-}
+    if (!verifyAuthorizationFormat(authorization)) {
+      return res.status(400).send({
+        type: "error",
+        payload: {
+          message: "Malformed Authorization header",
+          format: "Bearer <token>",
+        },
+      });
+    }
+
+    try {
+      const token_payload = jwt.verify(getBearerToken(authorization), JWT_SECRET) as TeamleaderJWTPayload;
+
+      req.teamleader = {
+        isAuthenticated: true,
+        team: token_payload.team,
+      };
+
+      if (!config.controlled) {
+        next();
+      }
+
+      return true;
+    } catch (e) {
+      if (e instanceof JsonWebTokenError) {
+        return res.status(403).json({
+          type: "error",
+          payload: {
+            message: "Token could not be verified; It might be expired",
+          },
+        });
+      }
+
+      throw e;
+    }
+  };
+
+export const requireTeamleaderAuthentication = _requireTeamleaderAuthentication({ optional: false, controlled: false });
 
 export function requireLeaderOfTeam(auth: TeamleaderJWTPayload | undefined, teamPid: string) {
   if (auth?.team !== teamPid) {

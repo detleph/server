@@ -66,7 +66,8 @@ const sendMail = async (from: string, to: string, subject: string, text?: string
 export const verificationMail = async (to: string, eventName: string, verificationLink: string) => {
   const raw = mjml.getTemplate("emailVerification");
 
-  verificationLink = "https://" + (process.env.DOMAIN ?? "localhost:3000") + "/api/users/verify/" + verificationLink;
+  verificationLink =
+    "https://" + ("api." + process.env.DOMAIN ?? "localhost:3000/api") + "/users/verify/" + verificationLink;
   const message = Handlebars.compile(raw);
 
   const data = { eventName, verificationLink };

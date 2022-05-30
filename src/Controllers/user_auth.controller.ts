@@ -108,7 +108,6 @@ export const requestToken = async (req: Request, res: Response) => {
   res.status(200).json({ type: "sucess", message: "Email sent!" });
 };
 
-//TODO: This should be a get request with the code as a veriable part in the url
 export const verifyEmail = async (req: Request, res: Response) => {
   const { code } = req.params || {};
 

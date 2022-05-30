@@ -5,7 +5,6 @@ import nodemailer from "nodemailer";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
 
 import mjml from "./mjml";
-import { randomUUID } from "crypto";
 import logger from "../Middleware/error/logger";
 
 export let mailAccount = { user: process.env.MAILUSER + "@mail." + process.env.DOMAIN, pass: process.env.MAILPASSWORD };
@@ -67,7 +66,6 @@ const sendMail = async (from: string, to: string, subject: string, text?: string
 export const verificationMail = async (to: string, eventName: string, verificationLink: string) => {
   const raw = mjml.getTemplate("emailVerification");
 
-  //TODO: Set the verification link to the correct endpoint
   verificationLink = "https://" + (process.env.DOMAIN ?? "localhost:3000") + "/api/users/verify/" + verificationLink;
   const message = Handlebars.compile(raw);
 

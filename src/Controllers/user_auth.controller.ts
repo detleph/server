@@ -15,7 +15,7 @@ const TeamBody = z.object({
   partFirstName: z.string().min(1),
   partLastName: z.string().min(1),
   partGroupId: z.string().uuid(),
-})
+});
 
 interface CreateTeamBody {
   teamName: string;
@@ -28,19 +28,21 @@ interface CreateTeamBody {
 
 // TODO: Some kind of auth (Teamleader probably)
 export const register = async (req: Request<{}, {}, CreateTeamBody>, res: Response) => {
-  
   const result = TeamBody.safeParse(req.body);
 
   if (result.success === false) {
     return res.status(400).json(
-      generateInvalidBodyError({
-        teamName: DataType.STRING,
-        leaderEmail: DataType.STRING,
-        disciplineId: DataType.UUID,
-        partFirstName: DataType.STRING,
-        partLastName: DataType.STRING,
-        partGroupId: DataType.UUID,
-      }, result.error)
+      generateInvalidBodyError(
+        {
+          teamName: DataType.STRING,
+          leaderEmail: DataType.STRING,
+          disciplineId: DataType.UUID,
+          partFirstName: DataType.STRING,
+          partLastName: DataType.STRING,
+          partGroupId: DataType.UUID,
+        },
+        result.error
+      )
     );
   }
 
@@ -58,8 +60,8 @@ export const register = async (req: Request<{}, {}, CreateTeamBody>, res: Respon
           lastName: body.partLastName,
           relevance: "TEAMLEADER",
           group: { connect: { pid: body.partGroupId } },
-        }
-      }
+        },
+      },
     },
     select: {
       pid: true,
@@ -68,7 +70,7 @@ export const register = async (req: Request<{}, {}, CreateTeamBody>, res: Respon
     },
   });
 
-  //To do: maybe use returned amount of created use?
+  //TODO: maybe use returned amount of created use?
   createRolesForTeam(team.pid);
 
   const usid = nanoid();

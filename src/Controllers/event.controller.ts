@@ -182,12 +182,15 @@ export const updateEvent = async (req: Request<{ pid: string }>, res: Response) 
 
   if (result.success === false) {
     return res.status(400).json(
-      generateInvalidBodyError({
-        name: DataType.STRING,
-        date: DataType.DATETIME,
-        briefDescription: DataType.STRING,
-        ["fullDescription?"]: DataType.STRING,
-      })
+      generateInvalidBodyError(
+        {
+          name: DataType.STRING,
+          date: DataType.DATETIME,
+          briefDescription: DataType.STRING,
+          ["fullDescription?"]: DataType.STRING,
+        },
+        result.error
+      )
     );
   }
 
@@ -264,7 +267,7 @@ export const deleteEvent = async (req: Request<DeleteEventQueryParams>, res: Res
     return res.status(204).end();
   } catch (e) {
     if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
-      return res.status(404).json(generateError(`The organisation with the ID ${pid} could not be found`));
+      return res.status(404).json(generateError(`The event with the ID ${pid} could not be found`));
     }
 
     throw e;

@@ -1,6 +1,7 @@
 import { AdminLevel, Prisma } from "@prisma/client";
 import { PrismaClientKnownRequestError, PrismaClientUnknownRequestError } from "@prisma/client/runtime";
 import { Request, Response } from "express";
+import { ZodError } from "zod";
 import prisma from "../lib/prisma";
 
 interface StringIndexedObject {
@@ -23,6 +24,7 @@ export enum DataType {
   NUMBER = "number",
   INTEGER = "integer",
   PERMISSION_LEVEL = "'ELEVATED' | 'STANDARD'",
+  JOB = "'TEAMLEADER' | 'MEMBER'",
   DATETIME = "ISOstring",
   UUID = "string",
   RESULT_SCHEMA = "result_schema",
@@ -32,7 +34,18 @@ interface Body {
   [k: string]: DataType;
 }
 
-export function generateInvalidBodyError(body: Body) {
+export function generateInvalidBodyError(body: Body, zodError?: ZodError) {
+  if (zodError instanceof ZodError) {
+    return {
+      type: "error",
+      payload: {
+        message: "The body of your request did not conform to the requirements",
+        errors: { body: zodError.format() },
+        schema: { body },
+      },
+    };
+  }
+
   return {
     type: "error",
     payload: {

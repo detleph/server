@@ -5,14 +5,21 @@ import nodemailer from "nodemailer";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
 
 import mjml from "./mjml";
-import { randomUUID } from "crypto";
+import logger from "../Middleware/error/logger";
 
 export let mailAccount = { user: process.env.MAILUSER + "@mail." + process.env.DOMAIN, pass: process.env.MAILPASSWORD };
 
 let transporter =
-  process.env.DEV == "true" || process.env.DOMAIN == undefined
+  process.env.NODE_ENV == "development" || process.env.DOMAIN == undefined
     ? (async () => {
-        mailAccount = await nodemailer.createTestAccount();
+        if (process.env.ETHEREAL_EMAIL == undefined || process.env.ETHEREAL_PASSWORD == undefined) {
+          mailAccount = await nodemailer.createTestAccount();
+        } else {
+          mailAccount = {
+            user: process.env.ETHEREAL_EMAIL,
+            pass: process.env.ETHEREAL_PASSWORD,
+          };
+        }
         if (process.env.NODE_ENV != "test") {
           console.log(mailAccount);
         }
@@ -43,6 +50,8 @@ let transporter =
       );
 
 const sendMail = async (from: string, to: string, subject: string, text?: string, html?: string) => {
+  logger.debug(`Sent email to: ${to}`);
+
   return await (
     await transporter
   ).sendMail({
@@ -57,7 +66,8 @@ const sendMail = async (from: string, to: string, subject: string, text?: string
 export const verificationMail = async (to: string, eventName: string, verificationLink: string) => {
   const raw = mjml.getTemplate("emailVerification");
 
-  //TODO: Replace other handlebars with final values
+  verificationLink =
+    "https://" + ("api." + process.env.DOMAIN ?? "localhost:3000/api") + "/users/verify/" + verificationLink;
   const message = Handlebars.compile(raw);
 
   const data = { eventName, verificationLink };

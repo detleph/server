@@ -1,6 +1,7 @@
 import { Prisma, Organisation, Admin, AdminLevel, Team } from "@prisma/client";
 import { PrismaClientKnownRequestError, PrismaClientUnknownRequestError } from "@prisma/client/runtime";
 import { Request, Response } from "express";
+import { z } from "zod";
 import prisma from "../lib/prisma";
 import ForwardableError from "../Middleware/error/ForwardableError";
 import NotFoundError from "../Middleware/error/NotFoundError";
@@ -16,16 +17,20 @@ import {
 
 require("express-async-errors");
 
-const DisciplineBody = z.object({
-  name: z.string(),
-  maxTeamSize: z.number(),
-  minTeamSize: z.number(),
-  briefDescription: z.string(),
-  fullDescription: z.string(),
-  eventPid: z.string(),
-})
 
-const UpdateDisciplineBody = DisciplineBody.partial();
+const InitialDisciplineBody = z.object({
+  name: z.string().min(1),
+  minTeamSize: z.number(),
+  maxTeamSize: z.number(),
+});
+
+const disciplineRefiner = [
+  (args: any) => (args.minTeamSize && args.maxTeamSize ? args.minTeamSize <= args.maxTeamSize : true),
+  { message: "The minTeamSize must be smaller or equal to the maxTeamSize" },
+] as const;
+
+const DisciplineBody = InitialDisciplineBody.refine(...disciplineRefiner);
+const updateDisciplineBody = InitialDisciplineBody.partial().refine(...disciplineRefiner);
 
 const basicDiscipline = {
   pid: true,
@@ -220,37 +225,27 @@ export const createDiscipline = async (req: Request<{ eventPid: string }, {}, Cr
     return res.status(403).json(createInsufficientPermissionsError());
   }
 
-  const { name, minTeamSize, maxTeamSize, briefDescription, fullDescription } = req.body;
+  const result = DisciplineBody.safeParse(req.body);
 
-  if (typeof name !== "string" || 
-      typeof minTeamSize !== "number" || 
-      typeof maxTeamSize !== "number" || 
-      typeof briefDescription !== "string" ||
-      (fullDescription && typeof fullDescription !== "string")
-    ) {
+  if (result.success === false) {
     return res.status(400).json(
-      generateInvalidBodyError({
-        name: DataType.STRING,
-        minTeamSize: DataType.NUMBER,
-        maxTeamSize: DataType.NUMBER,
-      })
+      generateInvalidBodyError(
+        {
+          name: DataType.STRING,
+          minTeamSize: DataType.NUMBER,
+          maxTeamSize: DataType.NUMBER,
+        },
+        result.error
+      )
     );
   }
 
-  if (!validateName(name)) {
-    return res.status(400).json(NAME_ERROR);
-  }
+  const { name, minTeamSize, maxTeamSize } = result.data;
 
   try {
     const discipline = await prisma.discipline.create({
-      data: { name, minTeamSize, maxTeamSize, briefDescription, fullDescription, event: { connect: { pid: req.params.eventPid } } },
-      select: {
-        pid: true,
-        name: true,
-        minTeamSize: true,
-        maxTeamSize: true,
-        event: { select: { pid: true, name: true } },
-      },
+      data: { name, minTeamSize, maxTeamSize, event: { connect: { pid: req.params.eventPid } } },
+      select: basicDiscipline,
     });
 
     return res.status(201).json({ type: "success", payload: { discipline } });
@@ -262,12 +257,56 @@ export const createDiscipline = async (req: Request<{ eventPid: string }, {}, Cr
   }
 };
 
-interface DeleteDisciplineQueryParams {
-  pid: string;
-}
+// requires: auth(ELEVATED)
+export const updateDiscipline = async (req: Request<{ pid: string }>, res: Response) => {
+  if (req.auth?.permission_level !== "ELEVATED") {
+    res.status(403).json(createInsufficientPermissionsError());
+  }
+
+  const result = updateDisciplineBody.safeParse(req.body); // FIXME: Useres can currently use two requests to forgo min/max team size checking altogether
+
+  if (result.success === false) {
+    return res.status(400).json(
+      generateInvalidBodyError(
+        {
+          name: DataType.STRING,
+          minTeamSize: DataType.NUMBER,
+          maxTeamSize: DataType.NUMBER,
+        },
+        result.error
+      )
+    );
+  }
+
+  const body = result.data;
+  const { pid } = req.params;
+
+  try {
+    const discipline = await prisma.discipline.update({
+      where: { pid },
+      data: {
+        name: body.name,
+        minTeamSize: body.minTeamSize,
+        maxTeamSize: body.maxTeamSize,
+      },
+      select: basicDiscipline,
+    });
+
+    res.status(200).json({
+      type: "success",
+      payload: { discipline },
+    });
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+      throw new NotFoundError("discipline", pid);
+    }
+
+    throw e;
+  }
+};
 
 // requires: auth(ELEVATED)
-export const deleteDiscipline = async (req: Request<DeleteDisciplineQueryParams>, res: Response) => {
+export const deleteDiscipline = async (req: Request<{ pid: string }>, res: Response) => {
   if (req.auth?.permission_level !== "ELEVATED") {
     res.status(403).json(createInsufficientPermissionsError());
   }

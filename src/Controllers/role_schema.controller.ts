@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import { Request, Response } from "express";
+import { z } from "zod";
 import prisma from "../lib/prisma";
 import { DurationSchemaT, parseSchema, PointSchemaT } from "../lib/result_schema";
 import NotFoundError from "../Middleware/error/NotFoundError";
@@ -8,12 +9,21 @@ import SchemaError from "../Middleware/error/SchemaError";
 import {
   createInsufficientPermissionsError,
   DataType,
+  generateError,
   generateInvalidBodyError,
   NAME_ERROR,
   validateName,
 } from "./common";
 
+const RoleSchemaBody = z.object({
+  name: z.string().min(1),
+  schema: z.string(),
+});
+
+const UpdateRoleSchema = RoleSchemaBody.partial();
+
 const roleSchema = {
+  pid: true,
   name: true,
   schema: true,
   discipline: { select: { pid: true, name: true } },

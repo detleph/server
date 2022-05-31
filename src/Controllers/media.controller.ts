@@ -1,4 +1,4 @@
-import { Request, response, Response } from "express";
+import { NextFunction, Request, response, Response } from "express";
 import fs from "fs";
 import isSvg from "is-svg";
 import { fromBuffer as fileTypeFromBuffer } from "file-type";
@@ -12,6 +12,8 @@ import { type } from "os";
 import { unlink } from "fs/promises";
 import ForwardableError from "../Middleware/error/ForwardableError";
 import SchemaError from "../Middleware/error/SchemaError";
+import { z } from "zod";
+import { updateEvent } from "./event.controller";
 
 require("express-async-errors");
 
@@ -189,3 +191,87 @@ export const deleteMedia = async (req: Request, res: Response) => {
     throw e;
   }
 };
+
+//TODO: maybe create a function that adds the tableToUpdate based on path
+// and call it before calling (un)linkMedia 
+
+export const linkMedia = async (
+  req: Request<{ pid: string }, {}, { mediaPid: string }>, 
+  res: Response) => {
+  if (req.auth?.permission_level != "ELEVATED") {
+    res.status(403).json(createInsufficientPermissionsError());
+  }
+
+  const { pid } = req.params;
+  const { mediaPid } = req.body;
+  const tableToUpdate = req.originalUrl.split("/");
+
+  if(typeof mediaPid !== "string") {
+    return res.status(400).json(
+      generateInvalidBodyError({
+        mediaPid: DataType.UUID,
+      })
+    );
+  }
+
+  const updatedRec = await getPrismaUpdateFKT(tableToUpdate[2])({
+    where: { pid },
+    data: {
+      visual: { connect: { pid: mediaPid } },
+    },
+  });
+
+  if (!updatedRec) {
+    throw new NotFoundError(tableToUpdate[2], pid);
+  }
+
+  return res.status(200).json({
+    type: "success",
+    payload: {},
+  });
+};
+
+export const unlinkMedia = async (
+  req: Request<{ pid: string, mediaPid: string }>, 
+  res: Response) => {
+  if (req.auth?.permission_level != "ELEVATED") {
+    res.status(403).json(createInsufficientPermissionsError());
+  }
+
+  const { pid, mediaPid } = req.params;
+  const tableToUpdate = req.originalUrl.split("/");
+
+  try {
+    await getPrismaUpdateFKT(tableToUpdate[2])({
+      where: { pid },
+      data: { visual: { disconnect: { pid: mediaPid } } },
+    });
+    return res.status(204).end();
+  } catch (e) {
+    if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
+      console.log("not found error");
+      throw new NotFoundError(tableToUpdate[2], pid);
+    }
+    if (e instanceof Prisma.PrismaClientUnknownRequestError) {
+      return res.status(500).json({
+        type: "error",
+        payload: {
+          message: "Unknown error occurred with your request. Check if your parameters are correct",
+          schema: {
+            eventId: DataType.UUID,
+          },
+        },
+      });
+    }
+
+    throw e;
+  }
+};
+
+function getPrismaUpdateFKT( tableToUpdate: string ): Function {
+  switch(tableToUpdate) {
+    case "events": return prisma.event.update;
+    case "disciplines":  return prisma.discipline.update;
+    default: return prisma.roleSchema.update;
+  }
+}

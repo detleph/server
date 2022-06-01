@@ -20,7 +20,7 @@ const RoleSchemaBody = z.object({
   schema: z.string(),
 });
 
-const UpdateRoleSchema = RoleSchemaBody.partial();
+const UpdateBody = RoleSchemaBody.partial();
 
 const roleSchema = {
   pid: true,
@@ -128,6 +128,54 @@ export const createRoleSchema = async (
   } catch (e) {
     if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
       throw new NotFoundError("discipline", req.params.disciplinePid);
+    }
+
+    throw e;
+  }
+};
+
+export const UpdateRoleSchema = async (req: Request<{ pid: string }>, res: Response) => {
+  if (req.auth?.permission_level !== "ELEVATED") {
+    res.status(403).json(createInsufficientPermissionsError());
+  }
+
+  const { pid } = req.params;
+
+  const result = UpdateBody.safeParse(req.body);
+
+  if (result.success === false) {
+    return res.status(400).json(
+      generateInvalidBodyError(
+        {
+          name: DataType.STRING,
+          schema: DataType.STRING,
+        },
+        result.error
+      )
+    );
+  }
+
+  const body = result.data;
+
+  try {
+    const schema = await prisma.roleSchema.update({
+      where: { pid },
+      data: {
+        name: body.name,
+        schema: body.schema,
+      },
+      select: roleSchema,
+    });
+
+    res.status(200).json({
+      type: "success",
+      payload: {
+        schema,
+      },
+    });
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+      throw new NotFoundError("discipline", pid);
     }
 
     throw e;

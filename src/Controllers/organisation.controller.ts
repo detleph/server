@@ -12,6 +12,7 @@ import {
 } from "./common";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import { Prisma } from "@prisma/client";
+import NotFoundError from "../Middleware/error/NotFoundError";
 
 function validateOranisationName(name: string) {
   return name.length > 0;
@@ -187,16 +188,12 @@ export const updateOrganisation = async (
       },
     });
   } catch (e) {
-    if (e instanceof PrismaClientKnownRequestError) {
-      if (e.code === "P2025") {
-        return res.status(404).json(generateError(`The organisation with the ID ${pid} could not be found`));
-      }
-    } else if (e instanceof PrismaClientUnknownRequestError) {
-      return res.status(400).send(generateError("Unkonwn error occured. This could be due to malformed IDs"));
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+      throw new NotFoundError("discipline", pid);
     }
-  }
 
-  return res.status(500).json(genericError);
+    throw e;
+  }
 };
 
 interface DeleteOrganisationQueryParams {

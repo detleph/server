@@ -7,3 +7,5 @@ const router = Express.Router();
 router.get<"team/:teamPid/", { teamPid: string }>("team/:teamPid/", getRolesForTeam);
 
 router.put<"/:pid/participant", { pid: string }>("/:pid/participant", assignParticipantToRole);
+
+export default router;

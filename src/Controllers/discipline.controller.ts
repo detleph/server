@@ -1,7 +1,6 @@
 import { Prisma, Organisation, Admin, AdminLevel, Team } from "@prisma/client";
 import { PrismaClientKnownRequestError, PrismaClientUnknownRequestError } from "@prisma/client/runtime";
 import { Request, Response } from "express";
-import { z } from "zod";
 import prisma from "../lib/prisma";
 import ForwardableError from "../Middleware/error/ForwardableError";
 import NotFoundError from "../Middleware/error/NotFoundError";
@@ -17,11 +16,12 @@ import {
 
 require("express-async-errors");
 
-
 const InitialDisciplineBody = z.object({
   name: z.string().min(1),
   minTeamSize: z.number(),
   maxTeamSize: z.number(),
+  briefDescription: z.string(),
+  fullDescription: z.string(),
 });
 
 const disciplineRefiner = [
@@ -29,7 +29,9 @@ const disciplineRefiner = [
   { message: "The minTeamSize must be smaller or equal to the maxTeamSize" },
 ] as const;
 
-const DisciplineBody = InitialDisciplineBody.refine(...disciplineRefiner);
+const DisciplineBody = InitialDisciplineBody.partial({ briefDescription: true, fullDescription: true }).refine(
+  ...disciplineRefiner
+);
 const updateDisciplineBody = InitialDisciplineBody.partial().refine(...disciplineRefiner);
 
 const basicDiscipline = {
@@ -132,84 +134,6 @@ export const getDiscipline = async (req: Request<GetDisciplineQueryParams>, res:
   });
 };
 
-export const updateDiscipline = async (req: Request<{ pid: string }>, res: Response) => {
-  if (req.auth?.permission_level !== "ELEVATED") {
-    res.status(403).json(createInsufficientPermissionsError());
-  }
-
-  const { pid } = req.params;
-
-  const result = UpdateDisciplineBody.safeParse(req.body);
-
-  if (result.success === false) {
-    return res.status(400).json(
-      generateInvalidBodyError({
-        name: DataType.STRING,
-        minTeamSize: DataType.NUMBER,
-        maxTeamSize: DataType.NUMBER,
-        briefDescription: DataType.STRING,
-        ["fullDescription?"]: DataType.STRING,
-      })
-    );
-  }
-
-  const body = result.data;
-
-  try {
-    const discipline = await prisma.discipline.update({
-      where: { pid },
-      data: {
-        name: body.name,
-        minTeamSize: body.minTeamSize,
-        maxTeamSize: body.maxTeamSize,
-        briefDescription: body.briefDescription,
-        fullDescription: body.fullDescription,
-      },
-      select: {
-        pid: true,
-        name: true,
-        minTeamSize: true,
-        maxTeamSize: true,
-        briefDescription: true,
-        fullDescription: true,
-      },
-    });
-
-    if (!discipline) {
-      throw new NotFoundError("discipline", pid);
-    }
-
-    res.status(200).json({
-      type: "success",
-      payload: {
-        discipline,
-      },
-    });
-  } catch (e) {
-    if (e instanceof Prisma.PrismaClientKnownRequestError) {
-      return res.status(500).json({
-        type: "error",
-        payload: {
-          message: `Internal Server error occured. Try again later`,
-        },
-      });
-    }
-    if (e instanceof Prisma.PrismaClientUnknownRequestError) {
-      return res.status(500).json({
-        type: "error",
-        payload: {
-          message: "Unknown error occurred with your request. Check if your parameters are correct",
-          schema: {
-            eventId: DataType.UUID,
-          },
-        },
-      });
-    }
-
-    throw e;
-  }
-};
-
 interface CreateDisciplineBody {
   name?: string;
   minTeamSize?: number;
@@ -272,6 +196,8 @@ export const updateDiscipline = async (req: Request<{ pid: string }>, res: Respo
           name: DataType.STRING,
           minTeamSize: DataType.NUMBER,
           maxTeamSize: DataType.NUMBER,
+          briefDescription: DataType.STRING,
+          ["fullDescription?"]: DataType.STRING,
         },
         result.error
       )
@@ -288,6 +214,8 @@ export const updateDiscipline = async (req: Request<{ pid: string }>, res: Respo
         name: body.name,
         minTeamSize: body.minTeamSize,
         maxTeamSize: body.maxTeamSize,
+        briefDescription: body.briefDescription,
+        fullDescription: body.fullDescription,
       },
       select: basicDiscipline,
     });

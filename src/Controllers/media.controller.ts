@@ -1,4 +1,4 @@
-import { NextFunction, Request, response, Response } from "express";
+import { Request, Response } from "express";
 import fs from "fs";
 import isSvg from "is-svg";
 import { fromBuffer as fileTypeFromBuffer } from "file-type";
@@ -8,12 +8,8 @@ import prisma from "../lib/prisma";
 import NotFoundError from "../Middleware/error/NotFoundError";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import { generateInvalidBodyError, DataType } from "./common";
-import { type } from "os";
 import { unlink } from "fs/promises";
 import ForwardableError from "../Middleware/error/ForwardableError";
-import SchemaError from "../Middleware/error/SchemaError";
-import { z } from "zod";
-import { updateEvent } from "./event.controller";
 
 require("express-async-errors");
 
@@ -101,7 +97,6 @@ export const uploadImage = async (req: Request, res: Response) => {
   const fileName = file.md5 + (fileIsSvg ? ".svg" : "." + fileType?.ext);
 
   try {
-    //generate record
     const media = await prisma.media.create({
       data: {
         pid: fileName,
@@ -192,12 +187,7 @@ export const deleteMedia = async (req: Request, res: Response) => {
   }
 };
 
-//TODO: maybe create a function that adds the tableToUpdate based on path
-// and call it before calling (un)linkMedia 
-
-export const linkMedia = async (
-  req: Request<{ pid: string }, {}, { mediaPid: string }>, 
-  res: Response) => {
+export const linkMedia = async (req: Request<{ pid: string }, {}, { mediaPid: string }>, res: Response) => {
   if (req.auth?.permission_level != "ELEVATED") {
     res.status(403).json(createInsufficientPermissionsError());
   }
@@ -206,7 +196,7 @@ export const linkMedia = async (
   const { mediaPid } = req.body;
   const tableToUpdate = req.originalUrl.split("/");
 
-  if(typeof mediaPid !== "string") {
+  if (typeof mediaPid !== "string") {
     return res.status(400).json(
       generateInvalidBodyError({
         mediaPid: DataType.UUID,
@@ -231,9 +221,7 @@ export const linkMedia = async (
   });
 };
 
-export const unlinkMedia = async (
-  req: Request<{ pid: string, mediaPid: string }>, 
-  res: Response) => {
+export const unlinkMedia = async (req: Request<{ pid: string; mediaPid: string }>, res: Response) => {
   if (req.auth?.permission_level != "ELEVATED") {
     res.status(403).json(createInsufficientPermissionsError());
   }
@@ -249,29 +237,20 @@ export const unlinkMedia = async (
     return res.status(204).end();
   } catch (e) {
     if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
-      console.log("not found error");
       throw new NotFoundError(tableToUpdate[2], pid);
-    }
-    if (e instanceof Prisma.PrismaClientUnknownRequestError) {
-      return res.status(500).json({
-        type: "error",
-        payload: {
-          message: "Unknown error occurred with your request. Check if your parameters are correct",
-          schema: {
-            eventId: DataType.UUID,
-          },
-        },
-      });
     }
 
     throw e;
   }
 };
 
-function getPrismaUpdateFKT( tableToUpdate: string ): Function {
-  switch(tableToUpdate) {
-    case "events": return prisma.event.update;
-    case "disciplines":  return prisma.discipline.update;
-    default: return prisma.roleSchema.update;
+function getPrismaUpdateFKT(tableToUpdate: string): Function {
+  switch (tableToUpdate) {
+    case "events":
+      return prisma.event.update;
+    case "disciplines":
+      return prisma.discipline.update;
+    default:
+      return prisma.roleSchema.update;
   }
 }

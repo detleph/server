@@ -34,13 +34,11 @@ model Admin {
 }
 
 model Discipline {
-  id               Int     @id @default(autoincrement())
-  pid              String  @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name             String
-  briefDescription String
-  fullDescription  String?
-  minTeamSize      Int
-  maxTeamSize      Int
+  id          Int    @id @default(autoincrement())
+  pid         String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  minTeamSize Int
+  maxTeamSize Int
 
   roles   RoleSchema[]
   teams   Team[]
@@ -62,15 +60,15 @@ model RoleSchema {
 }
 
 model Team {
-  id          Int     @id @default(autoincrement())
-  pid         String  @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id          Int    @id @default(autoincrement())
+  pid         String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String
   leaderEmail String
   verified    Boolean @default(false)
 
-  roles        Role[]        @relation(name: "participants")
+  roles        Role[]     @relation(name: "participants")
   participants Participant[]
-  discipline   Discipline    @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+  discipline   Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
   disciplineId Int
 }
 
@@ -83,7 +81,7 @@ model Participant {
 
   group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
   groupId Int
-  team    Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  team    Team  @relation(fields: [teamId], references: [id], onDelete: Cascade)
   teamId  Int
   roles   Role[]
 }
@@ -127,7 +125,7 @@ model Group {
 model Media {
   id          Int    @id @default(autoincrement())
   pid         String @unique
-  description String @default("visual")
+  description String
 
   events      Event[]
   disciplines Discipline[]

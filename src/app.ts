@@ -95,6 +95,9 @@ async function main() {
   // Error handling
   app.use(defaultErrorHandler); // This has to be the LAST ROUTE
 
+  // Disable the media router for now
+  // app.use("/api/media", mediaRouter);
+
   app.use(notFoundHandler);
 
   app.listen(process.env.PORT, () => {

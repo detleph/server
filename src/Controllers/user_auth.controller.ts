@@ -3,12 +3,12 @@ import prisma from "../lib/prisma";
 import { mailClient } from "../lib/redis";
 import { nanoid } from "nanoid";
 import { verificationMail } from "../lib/mail";
-import { createInsufficientPermissionsError, DataType, generateInvalidBodyError } from "./common";
+import { createInsufficientPermissionsError, DataType, generateError, generateInvalidBodyError } from "./common";
 import { generateTeamleaderJWT, requireLeaderOfTeam } from "../Middleware/auth/teamleaderAuth";
 import { createRolesForTeam } from "./role.controller";
 import { any, z } from "zod";
 
-const TeamBody = z.object({
+export const TeamBody = z.object({
   teamName: z.string().min(1),
   leaderEmail: z.string().email(),
   disciplineId: z.string().uuid(),
@@ -26,7 +26,6 @@ interface CreateTeamBody {
   partGroupId: string;
 }
 
-// TODO: Some kind of auth (Teamleader probably)
 export const register = async (req: Request<{}, {}, CreateTeamBody>, res: Response) => {
   const result = TeamBody.safeParse(req.body);
 
@@ -47,6 +46,18 @@ export const register = async (req: Request<{}, {}, CreateTeamBody>, res: Respon
   }
 
   const body = result.data;
+
+  const group = prisma.group.findUnique({ where: { pid: body.partGroupId } });
+
+  if (typeof group == null) {
+    return res.status(404).json(generateError("Specified group was not found!"));
+  }
+
+  const discipline = prisma.discipline.findUnique({ where: { pid: body.disciplineId } });
+
+  if (typeof discipline == null) {
+    return res.status(404).json(generateError("Specified discipline was not found!"));
+  }
 
   const team = await prisma.team.create({
     data: {
@@ -96,7 +107,7 @@ export const requestToken = async (req: Request, res: Response) => {
   });
 
   if (!team) {
-    return res.status(404).json();
+    return res.status(404).json(generateError("Team does not exist!"));
   }
 
   const usid = nanoid();

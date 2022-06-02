@@ -66,7 +66,7 @@ export const register = async (req: Request<{}, {}, CreateTeamBody>, res: Respon
     select: {
       pid: true,
       name: true,
-      disciplineId: true,
+      discipline: { select: { pid: true } },
     },
   });
 
@@ -105,7 +105,7 @@ export const requestToken = async (req: Request, res: Response) => {
 
   verificationMail(team.leaderEmail, "eventname", usid);
 
-  res.status(200).json({ type: "sucess", message: "Email sent!" });
+  res.status(200).json({ type: "sucess", payload: { message: "Email sent!" } });
 };
 
 export const verifyEmail = async (req: Request, res: Response) => {
@@ -149,5 +149,5 @@ export const verifyEmail = async (req: Request, res: Response) => {
     maxAge: 1000 * 60 * 60 * 24 * 4,
   });
 
-  res.status(200).json({ type: "succes", payload: { token } }); //TODO: This needs to set a cookie or smth so that the client also gets this info
+  res.status(200).json({ type: "succes", payload: { token } });
 };

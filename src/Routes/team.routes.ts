@@ -6,9 +6,19 @@ import { deleteTeam, getTeam, getTeams, updateTeam } from "../Controllers/team.c
 const router = express.Router();
 
 router.get("/", requireConfiguredAuthentication({ type: "admin", optional: false }), getTeams);
-router.get("/:id", getTeam);
+router.get(
+  "/:id",
+  requireAuthentication,
+  requireConfiguredAuthentication({ optional: true, type: { admin: true, teamleader: true } }),
+  getTeam
+);
 
 router.put("/", requireTeamleaderAuthentication, updateTeam);
-router.delete<"/:pid/", { pid: string }>("/:pid/", requireAuthentication, requireTeamleaderAuthentication, deleteTeam);
+router.delete<"/:pid/", { pid: string }>(
+  "/:pid/",
+  requireAuthentication,
+  requireConfiguredAuthentication({ optional: true, type: { admin: true, teamleader: true } }),
+  deleteTeam
+);
 
 export default router;

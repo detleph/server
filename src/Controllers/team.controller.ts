@@ -24,8 +24,28 @@ interface CreateTeamBody {
   partGroupId: string;
 }
 
+export const basicTeam = {
+  pid: true,
+  name: true,
+  discipline: { select: { pid: true } },
+  roles: {
+    select: {
+      pid: true,
+      schema: { select: { name: true } },
+      participant: { select: { pid: true } },
+    },
+  },
+  participants: {
+    select: {
+      pid: true,
+      firstName: true,
+      lastName: true,
+    },
+  },
+};
+
 export const getTeams = async (req: Request, res: Response) => {
-  const teams = prisma.team.findMany({ select: { pid: true, name: true, disciplineId: true } });
+  const teams = await prisma.team.findMany({ select: basicTeam });
 
   res.status(200).json(teams);
 };
@@ -33,13 +53,9 @@ export const getTeams = async (req: Request, res: Response) => {
 export const getTeam = async (req: Request, res: Response) => {
   const { pid } = req.params;
 
-  const team = prisma.team.findUnique({
+  const team = await prisma.team.findUnique({
     where: { pid },
-    select: {
-      disciplineId: true,
-      name: true,
-      pid: true,
-    },
+    select: basicTeam,
   });
 
   res.status(200).json(team);
@@ -72,7 +88,7 @@ export const updateTeam = async (req: Request, res: Response) => {
   }
 
   try {
-    const team = prisma.team.update({
+    const team = await prisma.team.update({
       where: {
         pid: body.pid,
       },
@@ -96,13 +112,7 @@ export const updateTeam = async (req: Request, res: Response) => {
 export const deleteTeam = async (req: Request, res: Response) => {
   const { pid } = req.params;
 
-  try {
-    requireLeaderOfTeam(req.teamleader, pid);
-  } catch {
-    return res.status(401).json(createInsufficientPermissionsError("STANDARD"));
-  }
-
-  prisma.team.delete({ where: { pid } });
+  await prisma.team.delete({ where: { pid } });
 
   res.status(204).json("Welp its gone");
 };

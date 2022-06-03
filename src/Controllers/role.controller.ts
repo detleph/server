@@ -91,8 +91,6 @@ export async function assignParticipantToRole(req: Request<{ pid: string }>, res
   const { participantPid } = zBody.data;
   const rolePid = req.params.pid;
 
-  requireResponsibleForParticipant(req.teamleader, participantPid);
-
   const schema = await prisma.role.findFirst({
     where: { pid: rolePid, team: { participants: { some: { pid: participantPid } } } },
     select: { participant: { select: { pid: true, firstName: true, lastName: true } } },

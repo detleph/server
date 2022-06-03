@@ -20,7 +20,7 @@ const InitialDisciplineBody = z.object({
   name: z.string().min(1),
   minTeamSize: z.number(),
   maxTeamSize: z.number(),
-  briefDescription: z.string(),
+  briefDescription: z.string().min(1),
   fullDescription: z.string(),
 });
 
@@ -29,9 +29,7 @@ const disciplineRefiner = [
   { message: "The minTeamSize must be smaller or equal to the maxTeamSize" },
 ] as const;
 
-const DisciplineBody = InitialDisciplineBody.partial({ briefDescription: true, fullDescription: true }).refine(
-  ...disciplineRefiner
-);
+const DisciplineBody = InitialDisciplineBody.partial({ fullDescription: true }).refine(...disciplineRefiner);
 const updateDisciplineBody = InitialDisciplineBody.partial().refine(...disciplineRefiner);
 
 const basicDiscipline = {
@@ -158,17 +156,19 @@ export const createDiscipline = async (req: Request<{ eventPid: string }, {}, Cr
           name: DataType.STRING,
           minTeamSize: DataType.NUMBER,
           maxTeamSize: DataType.NUMBER,
+          briefDescription: DataType.STRING,
+          ["fullDescription?"]: DataType.STRING,
         },
         result.error
       )
     );
   }
 
-  const { name, minTeamSize, maxTeamSize } = result.data;
+  const { name, minTeamSize, maxTeamSize, briefDescription } = result.data;
 
   try {
     const discipline = await prisma.discipline.create({
-      data: { name, minTeamSize, maxTeamSize, event: { connect: { pid: req.params.eventPid } } },
+      data: { name, minTeamSize, maxTeamSize, briefDescription, event: { connect: { pid: req.params.eventPid } } },
       select: basicDiscipline,
     });
 

@@ -5,8 +5,8 @@ import { requireAuthentication, requireConfiguredAuthentication } from "../Middl
 
 const router = express.Router();
 
-teamRouter.post<"/:teamPid/participant/", { teamPid: string }>(
-  "/:teamPid/participant/",
+teamRouter.post<"/:teamPid/participants/", { teamPid: string }>(
+  "/:teamPid/participants/",
   requireAuthentication,
   requireConfiguredAuthentication({ optional: true, type: { admin: true, teamleader: true } }),
   createParticipant

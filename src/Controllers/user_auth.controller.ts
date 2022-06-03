@@ -7,6 +7,7 @@ import { createInsufficientPermissionsError, DataType, generateInvalidBodyError 
 import { generateTeamleaderJWT, requireLeaderOfTeam } from "../Middleware/auth/teamleaderAuth";
 import { createRolesForTeam } from "./role.controller";
 import { any, z } from "zod";
+import { basicTeam } from "./team.controller";
 
 const TeamBody = z.object({
   teamName: z.string().min(1),
@@ -70,13 +71,13 @@ export const register = async (req: Request<{}, {}, CreateTeamBody>, res: Respon
     },
   });
 
-  //TODO: maybe use returned amount of created use?
-  createRolesForTeam(team.pid);
+  await createRolesForTeam(team.pid);
 
   const usid = nanoid();
 
   (await mailClient).set(usid, team.pid);
 
+  // TODO: fix "eventname"
   verificationMail(req.body.leaderEmail, "eventname", usid);
 
   res.status(201).json({ type: "success", payload: { team } });
@@ -103,6 +104,7 @@ export const requestToken = async (req: Request, res: Response) => {
 
   (await mailClient).set(usid, team.pid);
 
+  // TODO: fix "eventname"
   verificationMail(team.leaderEmail, "eventname", usid);
 
   res.status(200).json({ type: "sucess", message: "Email sent!" });

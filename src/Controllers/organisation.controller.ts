@@ -213,7 +213,7 @@ export const deleteOrganisation = async (req: Request<DeleteOrganisationQueryPar
   const { pid } = req.params;
 
   try {
-    prisma.organisation.delete({ where: { pid } });
+    await prisma.organisation.delete({ where: { pid } });
 
     res.status(204).end();
   } catch (e) {

@@ -8,6 +8,30 @@ import { createInsufficientPermissionsError, DataType, generateInvalidBodyError 
 
 require("express-async-errors");
 
+const detailedRole = {
+  pid: true,
+  score: true,
+  schema: {
+    select: {
+      pid: true,
+      name: true,
+    },
+  },
+  participant: {
+    select: {
+      pid: true,
+      firstName: true,
+      lastName: true,
+    },
+  },
+  team: {
+    select: {
+      pid: true,
+      name: true,
+    },
+  },
+};
+
 /**
  *
  * @param teamPid: Pid of the team to add the roles to
@@ -67,8 +91,6 @@ export async function assignParticipantToRole(req: Request<{ pid: string }>, res
   const { participantPid } = zBody.data;
   const rolePid = req.params.pid;
 
-  requireResponsibleForParticipant(req.teamleader, participantPid);
-
   const schema = await prisma.role.findFirst({
     where: { pid: rolePid, team: { participants: { some: { pid: participantPid } } } },
     select: { participant: { select: { pid: true, firstName: true, lastName: true } } },
@@ -92,68 +114,5 @@ export async function assignParticipantToRole(req: Request<{ pid: string }>, res
       message: `The participant with ID '${participantPid}' was successfully assigned to the role with ID '${rolePid}'`,
       ...(schema.participant ? { unassigned: schema.participant } : {}),
     },
-  });
-}
-
-export const updateRoleScore = async (req: Request<{ pid: string }, {}, { score: string }>, res: Response) => {
-  if (req.auth?.permission_level != "ELEVATED") {
-    res.status(403).json(createInsufficientPermissionsError());
-  }
-
-  const { score } = req.body;
-
-  if (typeof score !== "string") {
-    res.status(400).json(generateInvalidBodyError({ score: DataType.STRING }));
-  }
-
-  const { pid } = req.params;
-
-  try {
-    const role = await prisma.role.update({
-      where: { pid },
-      data: { score },
-      select: {
-        pid: true,
-        score: true,
-        schema: {
-          select: {
-            pid: true,
-            name: true,
-          },
-        },
-        participant: {
-          select: {
-            pid: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        team: {
-          select: {
-            pid: true,
-            name: true,
-          },
-        },
-      },
-    });
-
-    res.status(200).json({
-      type: "success",
-      payload: {
-        role,
-      },
-    });
-  } catch (e) {
-    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
-      throw new NotFoundError("role", pid);
-    }
-
-    throw e;
-  }
-};
-
-export async function deleteRolesFromTeam(teamPid: string) {
-  await prisma.role.deleteMany({
-    where: { team: { pid: teamPid } },
   });
 }

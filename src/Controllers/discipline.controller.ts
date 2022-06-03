@@ -1,10 +1,10 @@
 import { Prisma, Organisation, Admin, AdminLevel, Team } from "@prisma/client";
 import { PrismaClientKnownRequestError, PrismaClientUnknownRequestError } from "@prisma/client/runtime";
 import { Request, Response } from "express";
-import { z } from "zod";
 import prisma from "../lib/prisma";
 import ForwardableError from "../Middleware/error/ForwardableError";
 import NotFoundError from "../Middleware/error/NotFoundError";
+import { number, z } from "zod";
 import {
   createInsufficientPermissionsError,
   DataType,
@@ -20,6 +20,8 @@ const InitialDisciplineBody = z.object({
   name: z.string().min(1),
   minTeamSize: z.number(),
   maxTeamSize: z.number(),
+  briefDescription: z.string().min(1),
+  fullDescription: z.string(),
 });
 
 const disciplineRefiner = [
@@ -27,7 +29,7 @@ const disciplineRefiner = [
   { message: "The minTeamSize must be smaller or equal to the maxTeamSize" },
 ] as const;
 
-const DisciplineBody = InitialDisciplineBody.refine(...disciplineRefiner);
+const DisciplineBody = InitialDisciplineBody.partial({ fullDescription: true }).refine(...disciplineRefiner);
 const updateDisciplineBody = InitialDisciplineBody.partial().refine(...disciplineRefiner);
 
 const basicDiscipline = {
@@ -36,6 +38,8 @@ const basicDiscipline = {
   visual: { select: { pid: true } },
   maxTeamSize: true,
   minTeamSize: true,
+  briefDescription: true,
+  fullDescription: true,
   event: { select: { pid: true, name: true } },
   roles: { select: { pid: true, name: true } },
 } as const;
@@ -132,6 +136,8 @@ interface CreateDisciplineBody {
   name?: string;
   minTeamSize?: number;
   maxTeamSize?: number;
+  briefDescription?: string;
+  fullDescription?: string;
 }
 
 // require: auth(ELEVATED)
@@ -150,17 +156,19 @@ export const createDiscipline = async (req: Request<{ eventPid: string }, {}, Cr
           name: DataType.STRING,
           minTeamSize: DataType.NUMBER,
           maxTeamSize: DataType.NUMBER,
+          briefDescription: DataType.STRING,
+          ["fullDescription?"]: DataType.STRING,
         },
         result.error
       )
     );
   }
 
-  const { name, minTeamSize, maxTeamSize } = result.data;
+  const { name, minTeamSize, maxTeamSize, briefDescription } = result.data;
 
   try {
     const discipline = await prisma.discipline.create({
-      data: { name, minTeamSize, maxTeamSize, event: { connect: { pid: req.params.eventPid } } },
+      data: { name, minTeamSize, maxTeamSize, briefDescription, event: { connect: { pid: req.params.eventPid } } },
       select: basicDiscipline,
     });
 
@@ -188,6 +196,8 @@ export const updateDiscipline = async (req: Request<{ pid: string }>, res: Respo
           name: DataType.STRING,
           minTeamSize: DataType.NUMBER,
           maxTeamSize: DataType.NUMBER,
+          briefDescription: DataType.STRING,
+          ["fullDescription?"]: DataType.STRING,
         },
         result.error
       )
@@ -204,6 +214,8 @@ export const updateDiscipline = async (req: Request<{ pid: string }>, res: Respo
         name: body.name,
         minTeamSize: body.minTeamSize,
         maxTeamSize: body.maxTeamSize,
+        briefDescription: body.briefDescription,
+        fullDescription: body.fullDescription,
       },
       select: basicDiscipline,
     });
@@ -236,66 +248,6 @@ export const deleteDiscipline = async (req: Request<{ pid: string }>, res: Respo
   } catch (e) {
     if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
       throw new NotFoundError("discipline", pid);
-    }
-
-    throw e;
-  }
-};
-
-interface visualParams {
-  disciplinePid: string;
-}
-
-interface visualBody {
-  mediaPid: string;
-}
-
-export const addVisual = async (req: Request<visualParams, {}, visualBody>, res: Response) => {
-  if (req.auth?.permission_level != "ELEVATED") {
-    res.status(403).json(createInsufficientPermissionsError());
-  }
-
-  const { disciplinePid } = req.params;
-
-  const discipline = await prisma.discipline.update({
-    where: { pid: disciplinePid },
-    data: {
-      visual: { connect: { pid: req.body.mediaPid } },
-    },
-  });
-
-  // TODO: This does not work and should be updated in all addVisual-type code segments
-  //       Reason: update throw a PrismaClientKnownRequestError with code P2025 if the record to update could not be found
-  if (!discipline) {
-    throw new NotFoundError("discipline", disciplinePid);
-  }
-
-  return res.status(200).json({
-    type: "success",
-    payload: {},
-  });
-};
-
-export const deleteVisual = async (req: Request<visualParams & { pid: string }>, res: Response) => {
-  if (req.auth?.permission_level != "ELEVATED") {
-    res.status(403).json(createInsufficientPermissionsError());
-  }
-
-  const { disciplinePid, pid } = req.params;
-
-  try {
-    await prisma.discipline.update({
-      where: {
-        pid: disciplinePid,
-      },
-      data: {
-        visual: { disconnect: { pid } },
-      },
-    });
-    return res.status(204).end();
-  } catch (e) {
-    if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
-      throw new NotFoundError("discipline", disciplinePid); // Refer: Last todo; This is a correct example
     }
 
     throw e;

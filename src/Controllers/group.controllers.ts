@@ -192,7 +192,7 @@ export const deleteGroup = async (req: Request<DeleteGroupQueryParams>, res: Res
   const { pid } = req.params;
 
   try {
-    prisma.group.delete({ where: { pid } });
+    await prisma.group.delete({ where: { pid } });
 
     return res.status(204).end();
   } catch (e) {

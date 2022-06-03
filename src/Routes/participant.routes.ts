@@ -1,29 +1,24 @@
 import express from "express";
-import teamRouter from "./team.routes";
 import { createParticipant, deleteParticipant, updateParticipant } from "../Controllers/participant.controller";
-import { requireAuthentication } from "../Middleware/auth/auth";
-import { requireTeamleaderAuthentication } from "../Middleware/auth/teamleaderAuth";
+import { requireAuthentication, requireConfiguredAuthentication } from "../Middleware/auth/auth";
 
 const router = express.Router();
 
-teamRouter.post<"/:pid/participant/", { pid: string }>(
-  "/:pid/participant/",
-  requireAuthentication,
-  requireTeamleaderAuthentication,
+router.post(
+  "/",
+  requireConfiguredAuthentication({ optional: false, type: { admin: true, teamleader: true } }),
   createParticipant
 );
 
-teamRouter.patch<"/:pid/participant/", { pid: string }>(
-  "/:pid/participant/",
-  requireAuthentication,
-  requireTeamleaderAuthentication,
+router.patch<"/:pid/", { pid: string }>(
+  "/:pid/",
+  requireConfiguredAuthentication({ optional: false, type: { admin: true, teamleader: true } }),
   updateParticipant
 );
 
-teamRouter.delete<"/:pid/participant/", { pid: string }>(
-  "/:pid/participant/",
-  requireAuthentication,
-  requireTeamleaderAuthentication,
+router.delete<"/:pid/", { pid: string }>(
+  "/:pid/",
+  requireConfiguredAuthentication({ optional: false, type: { admin: true, teamleader: true } }),
   deleteParticipant
 );
 

@@ -11,19 +11,20 @@ import {
 import { Job, Prisma } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import NotFoundError from "../Middleware/error/NotFoundError";
-import { requireResponsibleForGroup } from "../Middleware/auth/auth";
+import { requireConfiguredAuthentication, requireResponsibleForGroup } from "../Middleware/auth/auth";
 
 //TODO: add TeamleaderAuthentification
 
 // REVIEW: All this code should be able to be executed by the teamleader of the team the participant is in AND
 //         an admin the group of whom overlaps with the team AND an elevated admin
 
-const ParticipantBody = z.object({
+const InitialParticipant = z.object({
   firstName: z.string(),
   lastName: z.string(),
-  groupId: z.string().uuid(),
-  //job: z.enum(["TEAMLEADER", "MEMBER"]),
+  groupPid: z.string().uuid(),
 });
+
+const ParticipantBody = InitialParticipant.extend({ teamPid: z.string().uuid() });
 
 const returnedParticipant = {
   pid: true,
@@ -44,8 +45,8 @@ const returnedParticipant = {
   },
 } as const;
 
-// REVIEW: Location of this endpoints (/groups, /teams, /participants, ...?)
-export const createParticipant = async (req: Request<{ pid: string }>, res: Response) => {
+// at: POST api/teams/:teamPid/participant/
+export const createParticipant = async (req: Request, res: Response) => {
   const result = ParticipantBody.safeParse(req.body);
 
   if (result.success === false) {
@@ -54,24 +55,14 @@ export const createParticipant = async (req: Request<{ pid: string }>, res: Resp
         {
           firstname: DataType.STRING,
           lastName: DataType.STRING,
-          groupId: DataType.UUID,
+          groupPid: DataType.UUID,
+          teamPid: DataType.UUID,
         },
         result.error
       )
     );
   }
   const body = result.data;
-  const { pid } = req.params;
-
-  /*
-  if (!req.auth?.isAuthenticated || req.teamleader?.team != pid) {
-    return res.status(500).json(AUTH_ERROR);
-  }
-  if (req.teamleader?.team != pid) {
-    return res.status(500).json(AUTH_ERROR);
-  }
-  requireResponsibleForGroup(req.auth, req.body.groupId);
-  */
 
   try {
     const participant = await prisma.participant.create({
@@ -79,8 +70,8 @@ export const createParticipant = async (req: Request<{ pid: string }>, res: Resp
         firstName: body.firstName,
         lastName: body.lastName,
         relevance: "MEMBER",
-        group: { connect: { pid: body.groupId } },
-        team: { connect: { pid } },
+        group: { connect: { pid: body.groupPid } },
+        team: { connect: { pid: body.teamPid } },
       },
       select: returnedParticipant,
     });
@@ -93,16 +84,15 @@ export const createParticipant = async (req: Request<{ pid: string }>, res: Resp
     if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
       return res
         .status(404)
-        .json(generateError(`Could not link to team with ID '${pid}, or group with ID ${body.groupId}'`));
+        .json(generateError(`Could not link to team with ID '${body.teamPid}, or group with ID ${body.groupPid}'`));
     }
     throw e;
   }
 };
 
+// at: PATCH api/participants/:pid/
 export const updateParticipant = async (req: Request<{ pid: string }>, res: Response) => {
-  //insert TeamleaderAuth
-
-  const result = ParticipantBody.partial().safeParse(req.body); // Should be partial, right?
+  const result = InitialParticipant.partial().safeParse(req.body);
 
   if (result.success === false) {
     return res.status(400).json(
@@ -110,7 +100,7 @@ export const updateParticipant = async (req: Request<{ pid: string }>, res: Resp
         {
           firstname: DataType.STRING,
           lastName: DataType.STRING,
-          groupId: DataType.UUID,
+          groupPid: DataType.UUID,
         },
         result.error
       )
@@ -126,7 +116,7 @@ export const updateParticipant = async (req: Request<{ pid: string }>, res: Resp
       data: {
         firstName: body.firstName,
         lastName: body.lastName,
-        group: { connect: { pid: body.groupId } },
+        group: { connect: { pid: body.groupPid } },
       },
       select: returnedParticipant,
     });
@@ -144,9 +134,8 @@ export const updateParticipant = async (req: Request<{ pid: string }>, res: Resp
   }
 };
 
+// at: DELETE api/participants/:pid/
 export const deleteParticipant = async (req: Request<{ pid: string }>, res: Response) => {
-  //insert TeamleaderAuth
-
   const { pid } = req.params;
 
   try {
@@ -155,7 +144,7 @@ export const deleteParticipant = async (req: Request<{ pid: string }>, res: Resp
     return res.status(204).end();
   } catch (e) {
     if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
-      return res.status(404).json(generateError(`The participant with the ID ${pid} could not be found`));
+      throw new NotFoundError("participant", pid);
     }
 
     throw e;

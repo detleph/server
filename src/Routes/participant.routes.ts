@@ -1,6 +1,6 @@
 import express from "express";
 import { createParticipant, deleteParticipant, updateParticipant } from "../Controllers/participant.controller";
-import { requireAuthentication, requireConfiguredAuthentication } from "../Middleware/auth/auth";
+import { requireConfiguredAuthentication } from "../Middleware/auth/auth";
 
 const router = express.Router();
 

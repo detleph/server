@@ -1,6 +1,6 @@
 import Express from "express";
 import { assignParticipantToRole, getRolesForTeam } from "../Controllers/role.controller";
-import { requireAuthentication, requireConfiguredAuthentication } from "../Middleware/auth/auth";
+import { requireConfiguredAuthentication } from "../Middleware/auth/auth";
 
 const router = Express.Router();
 

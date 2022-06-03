@@ -1,8 +1,7 @@
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
-import { createInsufficientPermissionsError, DataType, generateInvalidBodyError } from "./common";
+import { DataType, generateInvalidBodyError } from "./common";
 import { requireLeaderOfTeam } from "../Middleware/auth/teamleaderAuth";
-import { z } from "zod";
 import { TeamBody } from "./user_auth.controller";
 import { Prisma } from "@prisma/client";
 import NotFoundError from "../Middleware/error/NotFoundError";
@@ -36,6 +35,10 @@ export const getTeams = async (req: Request, res: Response) => {
 export const getTeam = async (req: Request, res: Response) => {
   const { pid } = req.params;
 
+  if (req.teamleader?.isAuthenticated) {
+    requireLeaderOfTeam(req.teamleader, pid);
+  }
+
   const team = await prisma.team.findUnique({
     where: { pid },
     select: basicTeam,
@@ -45,9 +48,13 @@ export const getTeam = async (req: Request, res: Response) => {
 };
 
 export const updateTeam = async (req: Request, res: Response) => {
-  const result = TeamBody.merge(z.object({ pid: z.string().min(1) }))
-    .omit({ partGroupId: true, partFirstName: true, partLastName: true })
-    .safeParse(req.body);
+  const { pid } = req.params;
+
+  if (req.teamleader?.isAuthenticated) {
+    requireLeaderOfTeam(req.teamleader, pid);
+  }
+
+  const result = TeamBody.omit({ partGroupId: true, partFirstName: true, partLastName: true }).safeParse(req.body);
 
   if (result.success === false) {
     return res.status(400).json(
@@ -64,12 +71,10 @@ export const updateTeam = async (req: Request, res: Response) => {
 
   const body = result.data;
 
-  requireLeaderOfTeam(req.teamleader, body.pid);
-
   try {
     const team = await prisma.team.update({
       where: {
-        pid: body.pid,
+        pid: pid,
       },
       data: {
         name: body.teamName,
@@ -81,7 +86,7 @@ export const updateTeam = async (req: Request, res: Response) => {
     res.status(204).json({ type: "success", payload: { team } });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
-      throw new NotFoundError("team", body.pid);
+      throw new NotFoundError("team", pid);
     }
 
     throw e;
@@ -91,8 +96,9 @@ export const updateTeam = async (req: Request, res: Response) => {
 export const deleteTeam = async (req: Request, res: Response) => {
   const { pid } = req.params;
 
-  // TODO: accept admin auth
-  requireLeaderOfTeam(req.teamleader, pid);
+  if (req.teamleader?.isAuthenticated) {
+    requireLeaderOfTeam(req.teamleader, pid);
+  }
 
   await prisma.team.delete({ where: { pid } });
 

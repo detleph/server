@@ -56,7 +56,9 @@ export async function createRolesForTeam(teamPid: string) {
 export async function getRolesForTeam(req: Request<{ teamPid: string }>, res: Response) {
   const teamPid = req.params.teamPid;
 
-  requireLeaderOfTeam(req.teamleader, teamPid);
+  if (req.teamleader?.isAuthenticated) {
+    requireLeaderOfTeam(req.teamleader, teamPid);
+  }
 
   const roles = await prisma.role.findMany({
     where: { team: { pid: teamPid } },
@@ -82,6 +84,12 @@ const AssignParticipantToRoleBody = z.object({
 
 // requires: auth(leader of the team)
 export async function assignParticipantToRole(req: Request<{ pid: string }>, res: Response) {
+  const { pid } = req.params;
+
+  if (req.teamleader?.isAuthenticated) {
+    requireLeaderOfTeam(req.teamleader, pid);
+  }
+
   const zBody = AssignParticipantToRoleBody.safeParse(req.body);
 
   if (zBody.success === false) {
@@ -89,10 +97,9 @@ export async function assignParticipantToRole(req: Request<{ pid: string }>, res
   }
 
   const { participantPid } = zBody.data;
-  const rolePid = req.params.pid;
 
   const schema = await prisma.role.findFirst({
-    where: { pid: rolePid, team: { participants: { some: { pid: participantPid } } } },
+    where: { pid, team: { participants: { some: { pid: participantPid } } } },
     select: { participant: { select: { pid: true, firstName: true, lastName: true } } },
   });
 
@@ -100,18 +107,18 @@ export async function assignParticipantToRole(req: Request<{ pid: string }>, res
     return res.status(404).json({
       type: "error",
       payload: {
-        message: `No role with the ID '${rolePid}' could be found in the scope of the participant with the ID '${participantPid}'`,
+        message: `No role with the ID '${pid}' could be found in the scope of the participant with the ID '${participantPid}'`,
       },
     });
   }
 
   // No error handling should be neccesary as the existence of the role and participant have already been checked above
-  await prisma.role.update({ where: { pid: rolePid }, data: { participant: { connect: { pid: participantPid } } } });
+  await prisma.role.update({ where: { pid }, data: { participant: { connect: { pid: participantPid } } } });
 
   return res.status(200).json({
     type: "success",
     payload: {
-      message: `The participant with ID '${participantPid}' was successfully assigned to the role with ID '${rolePid}'`,
+      message: `The participant with ID '${participantPid}' was successfully assigned to the role with ID '${pid}'`,
       ...(schema.participant ? { unassigned: schema.participant } : {}),
     },
   });

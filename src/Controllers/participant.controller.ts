@@ -1,22 +1,11 @@
 import prisma from "../lib/prisma";
 import { z } from "zod";
 import { Request, Response } from "express";
-import {
-  AUTH_ERROR,
-  createInsufficientPermissionsError,
-  DataType,
-  generateError,
-  generateInvalidBodyError,
-} from "./common";
-import { Job, Prisma } from "@prisma/client";
+import { DataType, generateError, generateInvalidBodyError } from "./common";
+import { Prisma } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import NotFoundError from "../Middleware/error/NotFoundError";
-import { requireConfiguredAuthentication, requireResponsibleForGroup } from "../Middleware/auth/auth";
-
-//TODO: add TeamleaderAuthentification
-
-// REVIEW: All this code should be able to be executed by the teamleader of the team the participant is in AND
-//         an admin the group of whom overlaps with the team AND an elevated admin
+import { requireLeaderOfTeam } from "../Middleware/auth/teamleaderAuth";
 
 const InitialParticipant = z.object({
   firstName: z.string(),
@@ -45,7 +34,7 @@ const returnedParticipant = {
   },
 } as const;
 
-// at: POST api/teams/:teamPid/participant/
+// at: POST api/participants/
 export const createParticipant = async (req: Request, res: Response) => {
   const result = ParticipantBody.safeParse(req.body);
 
@@ -63,6 +52,10 @@ export const createParticipant = async (req: Request, res: Response) => {
     );
   }
   const body = result.data;
+
+  if (req.teamleader?.isAuthenticated) {
+    requireLeaderOfTeam(req.teamleader, body.teamPid);
+  }
 
   try {
     const participant = await prisma.participant.create({
@@ -92,6 +85,12 @@ export const createParticipant = async (req: Request, res: Response) => {
 
 // at: PATCH api/participants/:pid/
 export const updateParticipant = async (req: Request<{ pid: string }>, res: Response) => {
+  const { pid } = req.params;
+
+  if (req.teamleader?.isAuthenticated) {
+    requireLeaderOfTeam(req.teamleader, pid);
+  }
+
   const result = InitialParticipant.partial().safeParse(req.body);
 
   if (result.success === false) {
@@ -108,7 +107,6 @@ export const updateParticipant = async (req: Request<{ pid: string }>, res: Resp
   }
 
   const body = result.data;
-  const { pid } = req.params;
 
   try {
     const participant = await prisma.participant.update({
@@ -137,6 +135,10 @@ export const updateParticipant = async (req: Request<{ pid: string }>, res: Resp
 // at: DELETE api/participants/:pid/
 export const deleteParticipant = async (req: Request<{ pid: string }>, res: Response) => {
   const { pid } = req.params;
+
+  if (req.teamleader?.isAuthenticated) {
+    requireLeaderOfTeam(req.teamleader, pid);
+  }
 
   try {
     await prisma.participant.delete({ where: { pid } });

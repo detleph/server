@@ -1,6 +1,5 @@
 import express from "express";
-import { requireAuthentication, requireConfiguredAuthentication } from "../Middleware/auth/auth";
-import { requireTeamleaderAuthentication } from "../Middleware/auth/teamleaderAuth";
+import { requireConfiguredAuthentication } from "../Middleware/auth/auth";
 import { deleteTeam, getTeam, getTeams, updateTeam } from "../Controllers/team.controller";
 
 const router = express.Router();
@@ -12,7 +11,11 @@ router.get(
   getTeam
 );
 
-router.put("/", requireTeamleaderAuthentication, updateTeam);
+router.put<"/:pid/", { pid: string }>(
+  "/:pid/",
+  requireConfiguredAuthentication({ optional: false, type: { admin: true, teamleader: true } }),
+  updateTeam
+);
 router.delete<"/:pid/", { pid: string }>(
   "/:pid/",
   requireConfiguredAuthentication({ optional: false, type: { admin: true, teamleader: true } }),

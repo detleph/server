@@ -10,6 +10,10 @@ export interface TeamleaderJWTPayload {
   team: string;
 }
 
+export function isTeamleaderJWTPayload(payload: any): payload is TeamleaderJWTPayload {
+  return typeof payload.team === "string";
+}
+
 const JWT_SECRET = process.env.JWT_SECRET;
 
 export function generateTeamleaderJWT(teamleader: Team) {
@@ -86,8 +90,13 @@ export const _requireTeamleaderAuthentication =
 
 export const requireTeamleaderAuthentication = _requireTeamleaderAuthentication({ optional: false, controlled: false });
 
-export async function requireLeaderOfTeam(auth: TeamleaderJWTPayload | undefined, teamPid: string) {
+export async function requireLeaderOfTeam(auth: TeamleaderJWTPayload | undefined, teamPid?: string) {
+  if (!teamPid) {
+    throw new AuthError("Could not match IDs");
+  }
+
   await checkTeamExistence(teamPid);
+
   if (auth?.team !== teamPid) {
     throw new AuthError("The provided authorization is not valid for the requested team");
   }

@@ -1,12 +1,16 @@
 import prisma from "../lib/prisma";
 import { string, z } from "zod";
 import { Request, Response } from "express";
-import { DataType, generateError, generateInvalidBodyError } from "./common";
+import { DataType, generateError, generateInvalidBodyError, createInsufficientPermissionsError } from "./common";
 import { Prisma } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import NotFoundError from "../Middleware/error/NotFoundError";
 import { requireLeaderOfTeam, requireResponsibleForParticipant } from "../Middleware/auth/teamleaderAuth";
 import { requireResponsibleForGroups } from "../Middleware/auth/auth";
+import { requireConfiguredAuthentication } from "../Middleware/auth/auth";
+import { isTeamleaderJWTPayload, TeamleaderJWTPayload } from "../Middleware/auth/teamleaderAuth";
+import { AuthJWTPayload } from "./admin_auth.controller";
+import AuthError from "../Middleware/error/AuthError";
 
 require("express-async-errors");
 
@@ -16,17 +20,13 @@ const InitialParticipant = z.object({
   groupPid: z.string().min(1).uuid(),
 });
 
-const returnedParticipant = {
+const ParticipantBody = InitialParticipant.extend({ teamPid: z.string().uuid() });
+
+const basicParticipant = {
   pid: true,
   firstName: true,
   lastName: true,
   relevance: true,
-  team: {
-    select: {
-      pid: true,
-      name: true,
-    },
-  },
   group: {
     select: {
       pid: true,
@@ -35,11 +35,105 @@ const returnedParticipant = {
   },
 } as const;
 
-// at: POST api/participants/
+const returnedParticipant = {
+  ...basicParticipant,
+  team: {
+    select: {
+      pid: true,
+      name: true,
+    },
+  },
+} as const;
+
+const _getAllParticipants = async (
+  res: Response,
+  authentication: TeamleaderJWTPayload | AuthJWTPayload,
+  teamPid?: string
+) => {
+  if (isTeamleaderJWTPayload(authentication)) {
+    teamPid = authentication.team;
+  } else {
+    if (authentication.permission_level !== "ELEVATED") {
+      throw new AuthError();
+    }
+  }
+
+  const participants = await prisma.participant.findMany({
+    where: { team: { pid: teamPid } },
+    select: basicParticipant,
+  });
+
+  return res.status(200).json({
+    type: "success",
+    payload: {
+      participants,
+    },
+  });
+};
+
+export const getAllParticipants = async (req: Request<{}, {}, {}, { teamPid?: string }>, res: Response) => {
+  const auth = req.auth || req.teamleader;
+
+  if (!auth) {
+    throw new AuthError("No authentication provided");
+  }
+
+  return _getAllParticipants(res, auth, req.query.teamPid);
+};
+
+export const getAllDisciplinesParams = async (req: Request<{ teamPid: string }>, res: Response) => {
+  const auth = req.auth || req.teamleader;
+
+  if (!auth) {
+    throw new AuthError("Not authentication provided");
+  }
+
+  return _getAllParticipants(res, auth, req.params.teamPid);
+};
+
+export const getParticipantForRole = async (req: Request<{ rolePid: string }>, res: Response) => {
+  let authenticated = false;
+
+  if (req.auth && req.auth.permission_level !== "ELEVATED") {
+    return res.status(403).json(createInsufficientPermissionsError());
+  } else if (req.auth) {
+    authenticated = true;
+  }
+
+  const participant = await prisma.participant.findFirst({
+    where: { roles: { some: { pid: req.params.rolePid } } },
+    select: returnedParticipant,
+  });
+
+  if (!authenticated) {
+    requireLeaderOfTeam(req.teamleader, participant?.team.pid);
+    authenticated = true;
+  }
+
+  if (!authenticated) {
+    throw new AuthError(); // REVIEW: Is this check neccesary?
+  }
+
+  if (!participant) {
+    return res.status(404).json({
+      type: "error",
+      payload: {
+        message: `Could not find a participant for the role with the ID '${req.params.rolePid}'`,
+      },
+    });
+  }
+
+  return res.status(200).json({
+    type: "success",
+    payload: { participant },
+  });
+};
+
+// at: POST api/teams/:teamPid/participant/
 export const createParticipant = async (req: Request<{ teamPid: string }>, res: Response) => {
   const { teamPid } = req.params;
 
-  const result = InitialParticipant.safeParse(req.body);
+  const result = ParticipantBody.safeParse(req.body);
 
   if (result.success === false) {
     return res.status(400).json(

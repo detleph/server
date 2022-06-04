@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
-import { DataType, generateInvalidBodyError } from "./common";
+import { createInsufficientPermissionsError, DataType, generateInvalidBodyError } from "./common";
 import { requireLeaderOfTeam } from "../Middleware/auth/teamleaderAuth";
 import { TeamBody } from "./user_auth.controller";
 import { Prisma } from "@prisma/client";
@@ -87,6 +87,13 @@ export const updateTeam = async (req: Request, res: Response) => {
   }
 
   const body = result.data;
+
+  try {
+    requireLeaderOfTeam(req.teamleader, pid);
+  } catch {
+    // TODO: DO NOT CATCH THESE ERRORS
+    return res.status(401).json(createInsufficientPermissionsError("STANDARD"));
+  }
 
   try {
     const team = await prisma.team.update({

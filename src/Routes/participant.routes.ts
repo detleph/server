@@ -1,13 +1,33 @@
 import express from "express";
-import { createParticipant, deleteParticipant, updateParticipant } from "../Controllers/participant.controller";
-import { requireConfiguredAuthentication } from "../Middleware/auth/auth";
 import teamRouter from "./team.routes";
+import {
+  createParticipant,
+  deleteParticipant,
+  getAllParticipants,
+  getAllParticipantsParams,
+  updateParticipant,
+} from "../Controllers/participant.controller";
+import { requireAuthentication, requireConfiguredAuthentication } from "../Middleware/auth/auth";
+
+require("express-async-errors");
 
 const router = express.Router();
 
-teamRouter.post<"/:teamPid/participants", { teamPid: string }>(
-  "/:teamPid/participants",
-  requireConfiguredAuthentication({ optional: false, type: { admin: true, teamleader: true } }),
+router.get(
+  "/",
+  requireConfiguredAuthentication({ type: { admin: true, teamleader: true }, optional: false }),
+  getAllParticipants
+);
+
+teamRouter.get(
+  "/:pid/particpants",
+  requireConfiguredAuthentication({ type: { admin: true, teamleader: true }, optional: false }),
+  getAllParticipantsParams
+);
+
+teamRouter.post<"/:teamPid/participants/", { teamPid: string }>(
+  "/:teamPid/participants/",
+  requireConfiguredAuthentication({ optional: true, type: { admin: true, teamleader: true } }),
   createParticipant
 );
 

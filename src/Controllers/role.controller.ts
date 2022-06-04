@@ -11,6 +11,13 @@ import { getGroupsByTeamPid } from "./team.controller";
 
 require("express-async-errors");
 
+const basicRole = {
+  pid: true,
+  score: true,
+  schema: { select: { pid: true } },
+  participant: { select: { pid: true, firstName: true, lastName: true } },
+};
+
 const detailedRole = {
   pid: true,
   score: true,
@@ -67,18 +74,30 @@ export async function getRolesForTeam(req: Request<{ pid: string }>, res: Respon
 
   const roles = await prisma.role.findMany({
     where: { team: { pid } },
-    select: {
-      pid: true,
-      score: true,
-      schema: { select: { pid: true } },
-      participant: { select: { pid: true, firstName: true, lastName: true } },
-    },
+    select: basicRole,
   });
 
   return res.status(200).json({
     type: "success",
     payload: {
       roles,
+    },
+  });
+}
+
+export async function getRole(req: Request<{ rolePid: string }>, res: Response) {
+  const rolePid = req.params.rolePid;
+
+  const role = await prisma.role.findUnique({ where: { pid: rolePid }, select: basicRole });
+
+  if (!role) {
+    throw new NotFoundError("role", rolePid);
+  }
+
+  return res.status(200).json({
+    type: "success",
+    payload: {
+      role,
     },
   });
 }

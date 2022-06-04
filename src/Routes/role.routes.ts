@@ -1,9 +1,16 @@
 import Express from "express";
-import { assignParticipantToRole, getRolesForTeam } from "../Controllers/role.controller";
-import { requireConfiguredAuthentication } from "../Middleware/auth/auth";
+import { assignParticipantToRole, getRole, getRolesForTeam } from "../Controllers/role.controller";
+import { requireAuthentication, requireConfiguredAuthentication } from "../Middleware/auth/auth";
+import { requireTeamleaderAuthentication } from "../Middleware/auth/teamleaderAuth";
 import teamRouter from "./team.routes";
 
 const router = Express.Router();
+
+router.get(
+  "/:rolePid",
+  requireConfiguredAuthentication({ type: { admin: true, teamleader: true }, optional: false }),
+  getRole
+);
 
 router.put<"/:pid/participant", { pid: string }>(
   "/:pid/participant",

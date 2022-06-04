@@ -81,7 +81,7 @@ export const getAllParticipants = async (req: Request<{}, {}, {}, { teamPid?: st
   return _getAllParticipants(res, auth, req.query.teamPid);
 };
 
-export const getAllDisciplinesParams = async (req: Request<{ teamPid: string }>, res: Response) => {
+export const getAllParticipantsParams = async (req: Request<{ teamPid: string }>, res: Response) => {
   const auth = req.auth || req.teamleader;
 
   if (!auth) {

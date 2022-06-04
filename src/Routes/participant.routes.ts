@@ -1,10 +1,12 @@
 import express from "express";
 import teamRouter from "./team.routes";
+import roleRouter from "./role.routes";
 import {
   createParticipant,
   deleteParticipant,
   getAllParticipants,
   getAllParticipantsParams,
+  getParticipantForRole,
   updateParticipant,
 } from "../Controllers/participant.controller";
 import { requireAuthentication, requireConfiguredAuthentication } from "../Middleware/auth/auth";
@@ -23,6 +25,12 @@ teamRouter.get(
   "/:pid/particpants",
   requireConfiguredAuthentication({ type: { admin: true, teamleader: true }, optional: false }),
   getAllParticipantsParams
+);
+
+roleRouter.get(
+  "/:rolePid/participant",
+  requireConfiguredAuthentication({ type: { admin: true, teamleader: true }, optional: false }),
+  getParticipantForRole
 );
 
 teamRouter.post<"/:teamPid/participants/", { teamPid: string }>(

@@ -25,9 +25,18 @@ const updateGroupBody = z
 const basicGroup = {
   pid: true,
   name: true,
-  level: true,
   organisation: { select: { pid: true, name: true } },
 } as const;
+
+const detailedGroup = {
+  pid: true,
+  name: true,
+  level: true,
+  user_limit: true,
+  organisation: { select: { pid: true, name: true } },
+  participants: { select: { pid: true, firstName: true, lastName: true } },
+  admins: { select: { pid: true, name: true } },
+}
 
 export const _getAllGroups = async (res: Response, organisationId: string | undefined) => {
   const groups = await prisma.group.findMany({
@@ -77,12 +86,12 @@ export const getGroup = async (req: Request<GetGroupQueryParams>, res: Response)
       where: { pid },
       select: req.auth?.isAuthenticated
         ? {
-            pid: true,
-            name: true,
-            organisation: { select: { pid: true, name: true } },
-            admins: { select: { pid: true, name: true } },
-            participants: { select: { pid: true } },
-          }
+          pid: true,
+          name: true,
+          organisation: { select: { pid: true, name: true } },
+          admins: { select: { pid: true, name: true } },
+          participants: { select: { pid: true } },
+        }
         : basicGroup,
     });
 
@@ -101,15 +110,15 @@ export const getGroup = async (req: Request<GetGroupQueryParams>, res: Response)
           },
           ...(req.auth?.isAuthenticated
             ? {
-                admins: group.admins?.map((admin) => ({
-                  ...admin,
-                  _links: [{ rel: "self", type: "GET", href: `/api/admins/${admin.pid}` }],
-                })),
-                participants: group.participants?.map((participant) => ({
-                  ...participant,
-                  _links: [{ rel: "self", type: "GET", href: `/api/participant/${participant.pid}` }],
-                })),
-              }
+              admins: group.admins?.map((admin) => ({
+                ...admin,
+                _links: [{ rel: "self", type: "GET", href: `/api/admins/${admin.pid}` }],
+              })),
+              participants: group.participants?.map((participant) => ({
+                ...participant,
+                _links: [{ rel: "self", type: "GET", href: `/api/participant/${participant.pid}` }],
+              })),
+            }
             : {}),
         },
       },
@@ -164,7 +173,7 @@ export const updateGroup = async (req: Request<{ pid: string }>, res: Response) 
         user_limit: body.user_limit,
         level: body.level,
       },
-      select: basicGroup,
+      select: detailedGroup,
     });
 
     res.status(200).json({

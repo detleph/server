@@ -85,9 +85,10 @@ export const updateTeam = async (req: Request, res: Response) => {
         discipline: { connect: { pid: body.disciplineId } },
         leaderEmail: body.leaderEmail,
       },
+      select: basicTeam,
     });
 
-    res.status(204).json({ type: "success", payload: { team } });
+    res.status(200).json({ type: "success", payload: { team } });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
       throw new NotFoundError("team", pid);

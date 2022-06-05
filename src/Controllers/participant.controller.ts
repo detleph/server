@@ -1,5 +1,5 @@
 import prisma from "../lib/prisma";
-import { z } from "zod";
+import { string, z } from "zod";
 import { Request, Response } from "express";
 import { DataType, generateError, generateInvalidBodyError } from "./common";
 import { Prisma } from "@prisma/client";
@@ -10,7 +10,7 @@ import { requireLeaderOfTeam } from "../Middleware/auth/teamleaderAuth";
 const InitialParticipant = z.object({
   firstName: z.string(),
   lastName: z.string(),
-  groupPid: z.string().uuid(),
+  groupPid: z.string().min(1).uuid(),
 });
 
 const ParticipantBody = InitialParticipant.extend({ teamPid: z.string().uuid() });
@@ -58,6 +58,21 @@ export const createParticipant = async (req: Request, res: Response) => {
   }
 
   try {
+    const discipline = await prisma.team.findUnique({
+      where: { pid: body.teamPid },
+      select: { discipline: true }
+    });
+
+    const maxteamsize = discipline?.discipline.maxTeamSize;
+
+    const userCount = await prisma.participant.count({
+      where: { team: { pid: body.teamPid } }
+    });
+
+    if (maxteamsize == userCount) {
+      return res.status(418).json({ type: "error", payload: "The team has reached the limit of participants!" });
+    }
+
     const participant = await prisma.participant.create({
       data: {
         firstName: body.firstName,
@@ -69,10 +84,7 @@ export const createParticipant = async (req: Request, res: Response) => {
       select: returnedParticipant,
     });
 
-    return res.status(201).json({
-      type: "success",
-      payload: { participant },
-    });
+    return res.status(201).json({ type: "success", payload: { participant }, });
   } catch (e) {
     if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
       return res
@@ -86,9 +98,10 @@ export const createParticipant = async (req: Request, res: Response) => {
 // at: PATCH api/participants/:pid/
 export const updateParticipant = async (req: Request<{ pid: string }>, res: Response) => {
   const { pid } = req.params;
+  const teamPid = await getTeamPidByParticipantPid(pid);
 
   if (req.teamleader?.isAuthenticated) {
-    requireLeaderOfTeam(req.teamleader, pid);
+    requireLeaderOfTeam(req.teamleader, teamPid);
   }
 
   const result = InitialParticipant.partial().safeParse(req.body);
@@ -135,9 +148,10 @@ export const updateParticipant = async (req: Request<{ pid: string }>, res: Resp
 // at: DELETE api/participants/:pid/
 export const deleteParticipant = async (req: Request<{ pid: string }>, res: Response) => {
   const { pid } = req.params;
+  const teamPid = await getTeamPidByParticipantPid(pid);
 
   if (req.teamleader?.isAuthenticated) {
-    requireLeaderOfTeam(req.teamleader, pid);
+    requireLeaderOfTeam(req.teamleader, teamPid);
   }
 
   try {
@@ -152,3 +166,16 @@ export const deleteParticipant = async (req: Request<{ pid: string }>, res: Resp
     throw e;
   }
 };
+
+export const getTeamPidByParticipantPid = async function (partPid: string) {
+  const participant = await prisma.participant.findUnique({
+    where: { pid: partPid },
+    select: { team: { select: { pid: true } } }
+  });
+
+  if (!participant) {
+    throw new NotFoundError("participant", partPid);
+  }
+
+  return participant.team.pid;
+}

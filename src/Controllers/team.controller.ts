@@ -32,7 +32,7 @@ export const getTeams = async (req: Request, res: Response) => {
   res.status(200).json({ type: "success", payload: { teams } });
 };
 
-export const getTeam = async (req: Request, res: Response) => {
+export const getTeam = async (req: Request<{ pid: string }>, res: Response) => {
   const { pid } = req.params;
 
   if (req.teamleader?.isAuthenticated) {
@@ -43,6 +43,10 @@ export const getTeam = async (req: Request, res: Response) => {
     where: { pid },
     select: basicTeam,
   });
+
+  if (!team) {
+    throw new NotFoundError("team", pid);
+  }
 
   res.status(200).json({ type: "success", payload: { team } });
 };

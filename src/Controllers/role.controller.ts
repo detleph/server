@@ -5,6 +5,7 @@ import prisma from "../lib/prisma";
 import { requireLeaderOfTeam, requireResponsibleForParticipant } from "../Middleware/auth/teamleaderAuth";
 import NotFoundError from "../Middleware/error/NotFoundError";
 import { createInsufficientPermissionsError, DataType, generateInvalidBodyError } from "./common";
+import { getTeamPidByParticipantPid } from "./participant.controller";
 
 require("express-async-errors");
 
@@ -53,15 +54,15 @@ export async function createRolesForTeam(teamPid: string) {
   return roles.count;
 }
 
-export async function getRolesForTeam(req: Request<{ teamPid: string }>, res: Response) {
-  const teamPid = req.params.teamPid;
+export async function getRolesForTeam(req: Request<{ pid: string }>, res: Response) {
+  const pid = req.params.pid;
 
   if (req.teamleader?.isAuthenticated) {
-    requireLeaderOfTeam(req.teamleader, teamPid);
+    requireLeaderOfTeam(req.teamleader, pid);
   }
 
   const roles = await prisma.role.findMany({
-    where: { team: { pid: teamPid } },
+    where: { team: { pid } },
     select: {
       pid: true,
       score: true,
@@ -80,15 +81,12 @@ export async function getRolesForTeam(req: Request<{ teamPid: string }>, res: Re
 
 const AssignParticipantToRoleBody = z.object({
   participantPid: z.string().uuid(),
+  teamPid: z.string().uuid(),
 });
 
 // requires: auth(leader of the team)
 export async function assignParticipantToRole(req: Request<{ pid: string }>, res: Response) {
   const { pid } = req.params;
-
-  if (req.teamleader?.isAuthenticated) {
-    requireLeaderOfTeam(req.teamleader, pid);
-  }
 
   const zBody = AssignParticipantToRoleBody.safeParse(req.body);
 
@@ -97,6 +95,11 @@ export async function assignParticipantToRole(req: Request<{ pid: string }>, res
   }
 
   const { participantPid } = zBody.data;
+  const teamPid = await getTeamPidByParticipantPid(pid);
+
+  if (req.teamleader?.isAuthenticated) {
+    requireLeaderOfTeam(req.teamleader, teamPid);
+  }
 
   const schema = await prisma.role.findFirst({
     where: { pid, team: { participants: { some: { pid: participantPid } } } },

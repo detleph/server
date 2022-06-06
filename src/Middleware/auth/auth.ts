@@ -68,7 +68,7 @@ const _requireAdminAuthentication =
     const token_payload = token_payload_ as AuthJWTPayload;
 
     if (!token_payload.permission_level || !token_payload.pid || !token_payload.revision) {
-      if (typeof (token_payload as unknown as TeamleaderJWTPayload).team === "string") {
+      if (typeof (token_payload as unknown as TeamleaderJWTPayload).team === "string" && !config.controlled) {
         throw new AuthError("Teamleader authentication is not supported for this operation!");
       }
 

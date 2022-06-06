@@ -5,7 +5,8 @@ import { DataType, generateError, generateInvalidBodyError } from "./common";
 import { Prisma } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import NotFoundError from "../Middleware/error/NotFoundError";
-import { requireLeaderOfTeam } from "../Middleware/auth/teamleaderAuth";
+import { requireLeaderOfTeam, requireResponsibleForParticipant } from "../Middleware/auth/teamleaderAuth";
+import { requireResponsibleForGroups } from "../Middleware/auth/auth";
 
 const InitialParticipant = z.object({
   firstName: z.string(),
@@ -35,7 +36,9 @@ const returnedParticipant = {
 } as const;
 
 // at: POST api/participants/
-export const createParticipant = async (req: Request, res: Response) => {
+export const createParticipant = async (req: Request<{ teamPid: string }>, res: Response) => {
+  const { teamPid } = req.params;
+
   const result = ParticipantBody.safeParse(req.body);
 
   if (result.success === false) {
@@ -45,7 +48,6 @@ export const createParticipant = async (req: Request, res: Response) => {
           firstname: DataType.STRING,
           lastName: DataType.STRING,
           groupPid: DataType.UUID,
-          teamPid: DataType.UUID,
         },
         result.error
       )
@@ -54,7 +56,9 @@ export const createParticipant = async (req: Request, res: Response) => {
   const body = result.data;
 
   if (req.teamleader?.isAuthenticated) {
-    requireLeaderOfTeam(req.teamleader, body.teamPid);
+    await requireLeaderOfTeam(req.teamleader, teamPid);
+  } else {
+    requireResponsibleForGroups(req.auth, body.groupPid);
   }
 
   try {
@@ -98,10 +102,9 @@ export const createParticipant = async (req: Request, res: Response) => {
 // at: PATCH api/participants/:pid/
 export const updateParticipant = async (req: Request<{ pid: string }>, res: Response) => {
   const { pid } = req.params;
-  const teamPid = await getTeamPidByParticipantPid(pid);
 
   if (req.teamleader?.isAuthenticated) {
-    requireLeaderOfTeam(req.teamleader, teamPid);
+    requireResponsibleForParticipant(req.teamleader, pid);
   }
 
   const result = InitialParticipant.partial().safeParse(req.body);
@@ -127,7 +130,7 @@ export const updateParticipant = async (req: Request<{ pid: string }>, res: Resp
       data: {
         firstName: body.firstName,
         lastName: body.lastName,
-        group: { connect: { pid: body.groupPid } },
+        ...(body.groupPid ? { group: { connect: { pid: body.groupPid } } } : {}),
       },
       select: returnedParticipant,
     });
@@ -148,10 +151,11 @@ export const updateParticipant = async (req: Request<{ pid: string }>, res: Resp
 // at: DELETE api/participants/:pid/
 export const deleteParticipant = async (req: Request<{ pid: string }>, res: Response) => {
   const { pid } = req.params;
-  const teamPid = await getTeamPidByParticipantPid(pid);
 
   if (req.teamleader?.isAuthenticated) {
-    requireLeaderOfTeam(req.teamleader, teamPid);
+    requireResponsibleForParticipant(req.teamleader, pid);
+  } else {
+    await requireResponsibleForGroups(req.auth, await getGroupByParticipantPid(pid));
   }
 
   try {
@@ -167,15 +171,14 @@ export const deleteParticipant = async (req: Request<{ pid: string }>, res: Resp
   }
 };
 
-export const getTeamPidByParticipantPid = async function (partPid: string) {
-  const participant = await prisma.participant.findUnique({
-    where: { pid: partPid },
-    select: { team: { select: { pid: true } } }
-  });
+export async function getGroupByParticipantPid(partPid: string) {
+  const parti = (
+    await prisma.participant.findUnique({ where: { pid: partPid }, select: { group: true } })
+  )?.group.pid;
 
-  if (!participant) {
+  if (!parti) {
     throw new NotFoundError("participant", partPid);
   }
 
-  return participant.team.pid;
+  return parti;
 }

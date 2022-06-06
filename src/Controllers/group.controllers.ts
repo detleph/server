@@ -3,7 +3,7 @@ import { PrismaClientKnownRequestError, PrismaClientUnknownRequestError } from "
 import { Request, Response } from "express";
 import { z } from "zod";
 import prisma from "../lib/prisma";
-import { requireResponsibleForGroup } from "../Middleware/auth/auth";
+import { requireResponsibleForGroups } from "../Middleware/auth/auth";
 import NotFoundError from "../Middleware/error/NotFoundError";
 import {
   createInsufficientPermissionsError,
@@ -163,7 +163,7 @@ export const updateGroup = async (req: Request<{ pid: string }>, res: Response) 
   const body = result.data;
   const { pid } = req.params;
 
-  requireResponsibleForGroup(req.auth, pid);
+  requireResponsibleForGroups(req.auth, pid);
 
   try {
     const group = await prisma.group.update({

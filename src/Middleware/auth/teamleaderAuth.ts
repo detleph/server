@@ -85,7 +85,8 @@ export const _requireTeamleaderAuthentication =
 
 export const requireTeamleaderAuthentication = _requireTeamleaderAuthentication({ optional: false, controlled: false });
 
-export function requireLeaderOfTeam(auth: TeamleaderJWTPayload | undefined, teamPid: string) {
+export async function requireLeaderOfTeam(auth: TeamleaderJWTPayload | undefined, teamPid: string) {
+  await checkTeamExistence(teamPid);
   if (auth?.team !== teamPid) {
     throw new AuthError("The provided authorization is not valid for the requested team");
   }

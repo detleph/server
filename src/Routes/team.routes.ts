@@ -23,10 +23,4 @@ router.delete<"/:pid/", { pid: string }>(
   deleteTeam
 );
 
-router.get<"/:pid/roles", { pid: string }>(
-  "/:pid/roles",
-  requireConfiguredAuthentication({ optional: false, type: { admin: true, teamleader: true } }),
-  getRolesForTeam
-);
-
 export default router;

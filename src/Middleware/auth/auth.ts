@@ -173,12 +173,22 @@ export const requireConfiguredAuthentication =
     next();
   };
 
-export function requireResponsibleForGroup(auth: AuthJWTPayload | undefined, groupPid: string) {
+export function requireResponsibleForGroups(auth: AuthJWTPayload | undefined, groupPids: string[] | string) {
   if (auth?.permission_level === "ELEVATED") {
     return;
   }
 
-  if (!auth?.groups.includes(groupPid)) {
-    throw new AuthError("The provided authorization is not valid for the requested operation!");
+  if (Array.isArray(groupPids)) {
+    groupPids.forEach(gr => {
+      if (auth?.groups.includes(gr)) {
+        return;
+      }
+
+      throw new AuthError("The provided authorization is not valid for the requested operation!");
+    });
+  } else {
+    if (auth?.groups.includes(groupPids)) {
+      throw new AuthError("The provided authorization is not valid for the requested operation!");
+    }
   }
 }

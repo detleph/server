@@ -1,11 +1,12 @@
 import express from "express";
 import { createParticipant, deleteParticipant, updateParticipant } from "../Controllers/participant.controller";
 import { requireConfiguredAuthentication } from "../Middleware/auth/auth";
+import teamRouter from "./team.routes";
 
 const router = express.Router();
 
-router.post(
-  "/",
+teamRouter.post<"/:teamPid/participants", { teamPid: string }>(
+  "/:teamPid/participants",
   requireConfiguredAuthentication({ optional: false, type: { admin: true, teamleader: true } }),
   createParticipant
 );

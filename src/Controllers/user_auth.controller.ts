@@ -3,11 +3,10 @@ import prisma from "../lib/prisma";
 import { mailClient } from "../lib/redis";
 import { nanoid } from "nanoid";
 import { verificationMail } from "../lib/mail";
-import { createInsufficientPermissionsError, DataType, generateError, generateInvalidBodyError } from "./common";
-import { generateTeamleaderJWT, requireLeaderOfTeam } from "../Middleware/auth/teamleaderAuth";
+import { DataType, generateError, generateInvalidBodyError } from "./common";
+import { generateTeamleaderJWT } from "../Middleware/auth/teamleaderAuth";
 import { createRolesForTeam } from "./role.controller";
-import { any, z } from "zod";
-import { basicTeam } from "./team.controller";
+import { z } from "zod";
 
 export const TeamBody = z.object({
   teamName: z.string().min(1),

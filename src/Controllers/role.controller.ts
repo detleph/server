@@ -1,11 +1,12 @@
-import { Prisma, Role } from "@prisma/client";
 import { Request, Response } from "express";
 import { z } from "zod";
 import prisma from "../lib/prisma";
+import { requireResponsibleForGroups } from "../Middleware/auth/auth";
 import { requireLeaderOfTeam, requireResponsibleForParticipant } from "../Middleware/auth/teamleaderAuth";
 import NotFoundError from "../Middleware/error/NotFoundError";
-import { createInsufficientPermissionsError, DataType, generateInvalidBodyError } from "./common";
-import { getTeamPidByParticipantPid } from "./participant.controller";
+import { DataType, generateInvalidBodyError } from "./common";
+import { getGroupByParticipantPid } from "./participant.controller";
+import { getGroupsByTeamPid } from "./team.controller";
 
 require("express-async-errors");
 
@@ -58,7 +59,9 @@ export async function getRolesForTeam(req: Request<{ pid: string }>, res: Respon
   const pid = req.params.pid;
 
   if (req.teamleader?.isAuthenticated) {
-    requireLeaderOfTeam(req.teamleader, pid);
+    await requireLeaderOfTeam(req.teamleader, pid);
+  } else {
+    await requireResponsibleForGroups(req.auth, await getGroupsByTeamPid(pid));
   }
 
   const roles = await prisma.role.findMany({
@@ -95,10 +98,11 @@ export async function assignParticipantToRole(req: Request<{ pid: string }>, res
   }
 
   const { participantPid } = zBody.data;
-  const teamPid = await getTeamPidByParticipantPid(pid);
 
   if (req.teamleader?.isAuthenticated) {
-    requireLeaderOfTeam(req.teamleader, teamPid);
+    requireResponsibleForParticipant(req.teamleader, participantPid);
+  } else {
+    await requireResponsibleForGroups(req.auth, await getGroupByParticipantPid(participantPid));
   }
 
   const schema = await prisma.role.findFirst({

@@ -5,6 +5,7 @@ import { requireLeaderOfTeam } from "../Middleware/auth/teamleaderAuth";
 import { TeamBody } from "./user_auth.controller";
 import { Prisma } from "@prisma/client";
 import NotFoundError from "../Middleware/error/NotFoundError";
+import { requireResponsibleForGroups } from "../Middleware/auth/auth";
 
 export const basicTeam = {
   pid: true,
@@ -36,7 +37,9 @@ export const getTeam = async (req: Request<{ pid: string }>, res: Response) => {
   const { pid } = req.params;
 
   if (req.teamleader?.isAuthenticated) {
-    requireLeaderOfTeam(req.teamleader, pid);
+    await requireLeaderOfTeam(req.teamleader, pid);
+  } else {
+    await requireResponsibleForGroups(req.auth, pid);
   }
 
   const team = await prisma.team.findUnique({
@@ -55,7 +58,9 @@ export const updateTeam = async (req: Request, res: Response) => {
   const { pid } = req.params;
 
   if (req.teamleader?.isAuthenticated) {
-    requireLeaderOfTeam(req.teamleader, pid);
+    await requireLeaderOfTeam(req.teamleader, pid);
+  } else {
+    await requireResponsibleForGroups(req.auth, await getGroupsByTeamPid(pid));
   }
 
   const result = TeamBody.omit({ partGroupId: true, partFirstName: true, partLastName: true }).safeParse(req.body);
@@ -102,10 +107,35 @@ export const deleteTeam = async (req: Request, res: Response) => {
   const { pid } = req.params;
 
   if (req.teamleader?.isAuthenticated) {
-    requireLeaderOfTeam(req.teamleader, pid);
+    await requireLeaderOfTeam(req.teamleader, pid);
+  } else {
+    await requireResponsibleForGroups(req.auth, await getGroupsByTeamPid(pid));
   }
 
   await prisma.team.delete({ where: { pid } });
 
   res.status(204).json({ type: "success", payload: { message: "Sucesfully deleted team" } });
 };
+
+export async function checkTeamExistence(teamPid: string) {
+  const teamCount = await prisma.team.count({
+    where: { pid: teamPid, }
+  });
+  if (teamCount == 0) {
+    throw new NotFoundError("team", teamPid);
+  }
+}
+
+export async function getGroupsByTeamPid(teamPid: string) {
+  const team = (
+    await prisma.team.findUnique({ where: { pid: teamPid }, select: { participants: { select: { group: true } } } })
+  );
+
+  let groups: string[] = [];
+
+  team?.participants.forEach(participant => {
+    groups.push(participant.group.pid);
+  });
+
+  return groups;
+}

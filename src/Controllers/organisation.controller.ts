@@ -14,6 +14,8 @@ import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import { Prisma } from "@prisma/client";
 import NotFoundError from "../Middleware/error/NotFoundError";
 
+require("express-async-errors");
+
 function validateOranisationName(name: string) {
   return name.length > 0;
 }

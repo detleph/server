@@ -8,6 +8,8 @@ import NotFoundError from "../Middleware/error/NotFoundError";
 import { requireLeaderOfTeam, requireResponsibleForParticipant } from "../Middleware/auth/teamleaderAuth";
 import { requireResponsibleForGroups } from "../Middleware/auth/auth";
 
+require("express-async-errors");
+
 const InitialParticipant = z.object({
   firstName: z.string(),
   lastName: z.string(),
@@ -104,7 +106,7 @@ export const updateParticipant = async (req: Request<{ pid: string }>, res: Resp
   const { pid } = req.params;
 
   if (req.teamleader?.isAuthenticated) {
-    requireResponsibleForParticipant(req.teamleader, pid);
+    await requireResponsibleForParticipant(req.teamleader, pid);
   }
 
   const result = InitialParticipant.partial().safeParse(req.body);
@@ -153,9 +155,9 @@ export const deleteParticipant = async (req: Request<{ pid: string }>, res: Resp
   const { pid } = req.params;
 
   if (req.teamleader?.isAuthenticated) {
-    requireResponsibleForParticipant(req.teamleader, pid);
+    await requireResponsibleForParticipant(req.teamleader, pid);
   } else {
-    await requireResponsibleForGroups(req.auth, await getGroupByParticipantPid(pid));
+    requireResponsibleForGroups(req.auth, await getGroupByParticipantPid(pid));
   }
 
   try {

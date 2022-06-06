@@ -6,6 +6,9 @@ import { TeamBody } from "./user_auth.controller";
 import { Prisma } from "@prisma/client";
 import NotFoundError from "../Middleware/error/NotFoundError";
 import { requireResponsibleForGroups } from "../Middleware/auth/auth";
+import AuthError from "../Middleware/error/AuthError";
+
+require("express-async-errors");
 
 export const basicTeam = {
   pid: true,
@@ -108,8 +111,10 @@ export const deleteTeam = async (req: Request, res: Response) => {
 
   if (req.teamleader?.isAuthenticated) {
     await requireLeaderOfTeam(req.teamleader, pid);
-  } else {
-    await requireResponsibleForGroups(req.auth, await getGroupsByTeamPid(pid));
+  }
+
+  if (req.auth?.permission_level == "STANDARD") {
+    throw new AuthError("STANDARD Admins are not allowed to delete Teams!")
   }
 
   await prisma.team.delete({ where: { pid } });

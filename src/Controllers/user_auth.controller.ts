@@ -8,6 +8,8 @@ import { generateTeamleaderJWT } from "../Middleware/auth/teamleaderAuth";
 import { createRolesForTeam } from "./role.controller";
 import { z } from "zod";
 
+require("express-async-errors");
+
 export const TeamBody = z.object({
   teamName: z.string().min(1),
   leaderEmail: z.string().email(),

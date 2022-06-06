@@ -14,6 +14,8 @@ import {
   handleCreateByName,
 } from "./common";
 
+require("express-async-errors");
+
 const updateGroupBody = z
   .object({
     name: z.string().min(1),

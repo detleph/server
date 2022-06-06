@@ -5,6 +5,8 @@ import argon2 from "argon2";
 import { AUTH_ERROR, createInsufficientPermissionsError, DataType, generateInvalidBodyError } from "./common";
 import { authClient } from "../lib/redis";
 
+require("express-async-errors");
+
 export const regenerateRevision = async (pid: string) => {
   // TOOO: Add error handling
   const { revision } = await prisma.admin.update({

@@ -15,6 +15,8 @@ import {
   validateName,
 } from "./common";
 
+require("express-async-errors");
+
 const RoleSchemaBody = z.object({
   name: z.string().min(1),
   schema: z.string(),

@@ -119,7 +119,7 @@ export const deleteTeam = async (req: Request, res: Response) => {
   }
 
   if (req.auth?.permission_level == "STANDARD") {
-    throw new AuthError("STANDARD Admins are not allowed to delete Teams!")
+    throw new AuthError("STANDARD Admins are not allowed to delete Teams!");
   }
 
   try {
@@ -137,7 +137,7 @@ export const deleteTeam = async (req: Request, res: Response) => {
 
 export async function checkTeamExistence(teamPid: string) {
   const teamCount = await prisma.team.count({
-    where: { pid: teamPid, }
+    where: { pid: teamPid },
   });
   if (teamCount == 0) {
     throw new NotFoundError("team", teamPid);
@@ -145,13 +145,14 @@ export async function checkTeamExistence(teamPid: string) {
 }
 
 export async function getGroupsByTeamPid(teamPid: string) {
-  const team = (
-    await prisma.team.findUnique({ where: { pid: teamPid }, select: { participants: { select: { group: true } } } })
-  );
+  const team = await prisma.team.findUnique({
+    where: { pid: teamPid },
+    select: { participants: { select: { group: true } } },
+  });
 
   let groups: string[] = [];
 
-  team?.participants.forEach(participant => {
+  team?.participants.forEach((participant) => {
     groups.push(participant.group.pid);
   });
 

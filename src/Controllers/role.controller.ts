@@ -106,7 +106,11 @@ export async function assignParticipantToRole(req: Request<{ pid: string }>, res
   }
 
   try {
-    const schema = await prisma.role.update({ where: { pid }, data: { participant: { connect: { pid: participantPid } } }, select: detailedRole });
+    const schema = await prisma.role.update({
+      where: { pid },
+      data: { participant: { connect: { pid: participantPid } } },
+      select: detailedRole,
+    });
 
     return res.status(200).json({
       type: "success",

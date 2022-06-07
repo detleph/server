@@ -64,13 +64,13 @@ export const createParticipant = async (req: Request<{ teamPid: string }>, res: 
   try {
     const discipline = await prisma.team.findUnique({
       where: { pid: teamPid },
-      select: { discipline: true }
+      select: { discipline: true },
     });
 
     const maxteamsize = discipline?.discipline.maxTeamSize;
 
     const userCount = await prisma.participant.count({
-      where: { team: { pid: teamPid } }
+      where: { team: { pid: teamPid } },
     });
 
     if (maxteamsize == userCount) {
@@ -88,7 +88,7 @@ export const createParticipant = async (req: Request<{ teamPid: string }>, res: 
       select: returnedParticipant,
     });
 
-    return res.status(201).json({ type: "success", payload: { participant }, });
+    return res.status(201).json({ type: "success", payload: { participant } });
   } catch (e) {
     if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
       return res
@@ -176,9 +176,7 @@ export const deleteParticipant = async (req: Request<{ pid: string }>, res: Resp
 };
 
 export async function getGroupByParticipantPid(partPid: string) {
-  const parti = (
-    await prisma.participant.findUnique({ where: { pid: partPid }, select: { group: true } })
-  )?.group.pid;
+  const parti = (await prisma.participant.findUnique({ where: { pid: partPid }, select: { group: true } }))?.group.pid;
 
   if (!parti) {
     throw new NotFoundError("participant", partPid);

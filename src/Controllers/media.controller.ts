@@ -224,7 +224,6 @@ export const linkMedia = async (req: Request<{ pid: string }, {}, { mediaPid: st
 
     throw e;
   }
-
 };
 
 export const unlinkMedia = async (req: Request<{ pid: string; mediaPid: string }>, res: Response) => {

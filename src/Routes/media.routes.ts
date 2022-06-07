@@ -1,7 +1,14 @@
 import express from "express";
 import fileUpload from "express-fileupload";
 import { requireAuthentication } from "../Middleware/auth/auth";
-import { deleteMedia, getAllMedia, getMediaMeta, linkMedia, unlinkMedia, uploadImage } from "../Controllers/media.controller";
+import {
+  deleteMedia,
+  getAllMedia,
+  getMediaMeta,
+  linkMedia,
+  unlinkMedia,
+  uploadImage,
+} from "../Controllers/media.controller";
 import eventRouter from "./event.routes";
 import disciplineRouter from "./discipline.routes";
 import roleSchemaRouter from "./role_schema.routes";
@@ -19,28 +26,28 @@ router.get("/:pid/meta", getMediaMeta);
 
 router.delete("/:pid", requireAuthentication, deleteMedia);
 
-eventRouter.post<"/:pid/media", { pid: string }>(
-    "/:pid/media", requireAuthentication, linkMedia
+eventRouter.post<"/:pid/media", { pid: string }>("/:pid/media", requireAuthentication, linkMedia);
+
+eventRouter.delete<"/:pid/media/:mediaPid", { pid: string; mediaPid: string }>(
+  "/:pid/media/:mediaPid",
+  requireAuthentication,
+  unlinkMedia
 );
 
-eventRouter.delete<"/:pid/media/:mediaPid", { pid: string, mediaPid: string }>(
-  "/:pid/media/:mediaPid", requireAuthentication, unlinkMedia
+disciplineRouter.post<"/:pid/media", { pid: string }>("/:pid/media", requireAuthentication, linkMedia);
+
+disciplineRouter.delete<"/:pid/media/:mediaPid", { pid: string; mediaPid: string }>(
+  "/:pid/media/:mediaPid",
+  requireAuthentication,
+  unlinkMedia
 );
 
-disciplineRouter.post<"/:pid/media", { pid: string }>(
-    "/:pid/media", requireAuthentication, linkMedia
-);
+roleSchemaRouter.post<"/:pid/media", { pid: string }>("/:pid/media", requireAuthentication, linkMedia);
 
-disciplineRouter.delete<"/:pid/media/:mediaPid", { pid: string, mediaPid: string }>(
-  "/:pid/media/:mediaPid", requireAuthentication, unlinkMedia
-);
-
-roleSchemaRouter.post<"/:pid/media", { pid: string }>(
-    "/:pid/media", requireAuthentication, linkMedia
-);
-
-roleSchemaRouter.delete<"/:pid/media/:mediaPid", { pid: string, mediaPid: string }>(
-  "/:pid/media/:mediaPid", requireAuthentication, unlinkMedia
+roleSchemaRouter.delete<"/:pid/media/:mediaPid", { pid: string; mediaPid: string }>(
+  "/:pid/media/:mediaPid",
+  requireAuthentication,
+  unlinkMedia
 );
 
 export default router;

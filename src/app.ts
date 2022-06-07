@@ -13,6 +13,10 @@ import defaultErrorHandler from "./Middleware/error/handler";
 import logger from "./Middleware/error/logger";
 import debugLogger from "./Middleware/debug/logger";
 import mediaRouter from "./Routes/media.routes";
+import userRouter from "./Routes/user_auth.routes";
+import teamRouter from "./Routes/team.routes";
+import roleRouter from "./Routes/role.routes";
+import participantRouter from "./Routes/participant.routes";
 import { notFoundHandler, rootHandler } from "./Middleware/error/defaultRoutes";
 
 // Set up async error handling
@@ -82,15 +86,20 @@ async function main() {
   app.use("/api/role-schemas", roleSchemaRouter);
 
   app.use("/api/media", mediaRouter);
-  
+
+  app.use("/api/users", userRouter);
+
+  app.use("/api/teams", teamRouter);
+
+  app.use("/api/roles", roleRouter);
+
+  app.use("/api/participants", participantRouter);
+
   app.get("/", rootHandler);
   app.get("/api", rootHandler);
 
   // Error handling
   app.use(defaultErrorHandler); // This has to be the LAST ROUTE
-
-  // Disable the media router for now
-  // app.use("/api/media", mediaRouter);
 
   app.use(notFoundHandler);
 

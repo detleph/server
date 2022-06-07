@@ -1,14 +1,44 @@
-import { Admin } from "@prisma/client";
+import { Admin, Prisma } from "@prisma/client";
 import { PrismaClientKnownRequestError, PrismaClientUnknownRequestError } from "@prisma/client/runtime";
 import { Request, Response } from "express";
+import { z } from "zod";
 import prisma from "../lib/prisma";
-import { createInsufficientPermissionsError, generateError, genericError, handleCreateByName } from "./common";
+import { requireResponsibleForGroups } from "../Middleware/auth/auth";
+import NotFoundError from "../Middleware/error/NotFoundError";
+import {
+  createInsufficientPermissionsError,
+  DataType,
+  generateError,
+  generateInvalidBodyError,
+  genericError,
+  handleCreateByName,
+} from "./common";
+
+require("express-async-errors");
+
+const updateGroupBody = z
+  .object({
+    name: z.string().min(1),
+    user_limit: z.number().int().positive(),
+    level: z.number().int().nonnegative(),
+  })
+  .partial();
 
 const basicGroup = {
   pid: true,
   name: true,
   organisation: { select: { pid: true, name: true } },
 } as const;
+
+const detailedGroup = {
+  pid: true,
+  name: true,
+  level: true,
+  user_limit: true,
+  organisation: { select: { pid: true, name: true } },
+  participants: { select: { pid: true, firstName: true, lastName: true } },
+  admins: { select: { pid: true, name: true } },
+};
 
 export const _getAllGroups = async (res: Response, organisationId: string | undefined) => {
   const groups = await prisma.group.findMany({
@@ -115,6 +145,52 @@ export const createGroup = async (req: Request<{ organisationPid: string }, {}, 
   );
 };
 
+// requires: auth(STANDARD with GROUP permission)
+export const updateGroup = async (req: Request<{ pid: string }>, res: Response) => {
+  const result = updateGroupBody.safeParse(req.body);
+
+  if (result.success === false) {
+    return res.status(400).json(
+      generateInvalidBodyError(
+        {
+          name: DataType.STRING,
+          user_limit: DataType.NUMBER,
+          level: DataType.NUMBER,
+        },
+        result.error
+      )
+    );
+  }
+
+  const body = result.data;
+  const { pid } = req.params;
+
+  requireResponsibleForGroups(req.auth, pid);
+
+  try {
+    const group = await prisma.group.update({
+      where: { pid },
+      data: {
+        name: body.name,
+        user_limit: body.user_limit,
+        level: body.level,
+      },
+      select: detailedGroup,
+    });
+
+    res.status(200).json({
+      type: "success",
+      payload: { group },
+    });
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+      throw new NotFoundError("group", pid);
+    }
+
+    throw e;
+  }
+};
+
 interface DeleteGroupQueryParams {
   pid: string;
 }
@@ -127,12 +203,12 @@ export const deleteGroup = async (req: Request<DeleteGroupQueryParams>, res: Res
   const { pid } = req.params;
 
   try {
-    prisma.group.delete({ where: { pid } });
+    await prisma.group.delete({ where: { pid } });
 
     return res.status(204).end();
   } catch (e) {
     if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
-      return res.status(404).json(generateError(`The group with the ID ${pid} could not be found`));
+      throw new NotFoundError("group", pid);
     }
 
     throw e;

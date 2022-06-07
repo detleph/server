@@ -5,6 +5,8 @@ import argon2 from "argon2";
 import { AUTH_ERROR, createInsufficientPermissionsError, DataType, generateInvalidBodyError } from "./common";
 import { authClient } from "../lib/redis";
 
+require("express-async-errors");
+
 export const regenerateRevision = async (pid: string) => {
   // TOOO: Add error handling
   const { revision } = await prisma.admin.update({
@@ -27,7 +29,9 @@ export const getAllAdmins = async (req: Request, res: Response) => {
   }
 
   // TODO: Add exception handling
-  const users = await prisma.admin.findMany({ select: { pid: true, name: true, permission_level: true } });
+  const users = await prisma.admin.findMany({
+    select: { pid: true, name: true, permission_level: true, groups: { select: { pid: true } } },
+  });
 
   res.status(200).json({
     type: "success",

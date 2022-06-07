@@ -7,7 +7,7 @@ const SchemaVersion = z.enum(["1.0"]);
 
 const TimeUnit = z.enum(["days", "hours", "minutes", "seconds", "milliseconds"]);
 
-const DurationSchema = z
+export const DurationSchema = z
   .object({
     type: z.literal("duration"),
     min: z.number().int({ message: "min must be an integer (relative to smallestUnit)" }),
@@ -17,7 +17,7 @@ const DurationSchema = z
   })
   .refine(({ min, max }) => min < max, { message: "min must be smaller than max" });
 
-const PointSchema = z
+export const PointSchema = z
   .object({
     type: z.literal("points"),
     min: z.number(),

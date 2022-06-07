@@ -50,7 +50,7 @@ async function main() {
     logger.info("Using production mode");
 
     // Configure cors
-    app.use(
+    /*app.use(
       cors({
         origin: process.env.ALLOW_ORIGIN,
         allowedHeaders: ["Content-Type", "Authorization"],
@@ -58,7 +58,13 @@ async function main() {
         methods: ["GET", "PUT", "PATCH", "POST", "DELETE"],
         optionsSuccessStatus: 204,
       })
-    );
+    );*/
+    //Cors is for some reason broken on our server so set the Cors headers manually
+    app.use(function (req, res, next) {
+      res.header("Access-Control-Allow-Origin", "https://josport.at");
+      res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+      next();
+    });
   }
 
   // Todo: Everything
@@ -86,7 +92,7 @@ async function main() {
   app.use("/api/role-schemas", roleSchemaRouter);
 
   app.use("/api/media", mediaRouter);
-
+  
   app.use("/api/users", userRouter);
 
   app.use("/api/teams", teamRouter);

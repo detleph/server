@@ -5,7 +5,7 @@ export function notFoundHandler(req: Request, res: Response) {
   return res.status(404).json({
     type: "error",
     payload: {
-      message: `The ${req.method} HTTP method is implemented for '${req.path}'`,
+      message: `The ${req.method} HTTP method is not implemented for '${req.path}'`,
       _links: [
         {
           rel: "root",

@@ -6,7 +6,7 @@ import argon2 from "argon2";
 import jwt from "jsonwebtoken";
 import { DataType, generateInvalidBodyError } from "./common";
 
-const JWT_SECRET = process.env.JWT_SECRET || "secret";
+const JWT_SECRET = process.env.JWT_SECRET;
 const TOKEN_EXPIRY = "4 days";
 
 export interface AuthJWTPayload {
@@ -18,6 +18,10 @@ export interface AuthJWTPayload {
 }
 
 function createAdminJWT(admin: Admin & { groups: Group[] }) {
+  if (!JWT_SECRET) {
+    throw new Error("JWT_SECRET not set");
+  }
+
   const payload: AuthJWTPayload = {
     pid: admin.pid,
     name: admin.name,

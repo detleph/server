@@ -70,7 +70,7 @@ export const register = async (req: Request<{}, {}, CreateTeamBody>, res: Respon
       select: {
         pid: true,
         name: true,
-        discipline: { select: { pid: true } },
+        discipline: { select: { pid: true, name: true } },
       },
     });
 
@@ -80,11 +80,8 @@ export const register = async (req: Request<{}, {}, CreateTeamBody>, res: Respon
 
     (await mailClient).set(usid, team.pid);
 
-    const eventname = await prisma.discipline.findUnique({ where: { pid: body.disciplineId }, select: { event: { select: { name: true, } } } }).event.name;
-    verificationMail(req.body.leaderEmail, eventname, usid);
-
+    verificationMail(req.body.leaderEmail, team.discipline.name, usid);
     return res.status(201).json({ type: "success", payload: { team } });
-
   } catch (e) {
     if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
       return res.status(404).json({
@@ -97,21 +94,25 @@ export const register = async (req: Request<{}, {}, CreateTeamBody>, res: Respon
 
     throw e;
   }
-
-
-
 };
 
 export const requestToken = async (req: Request, res: Response) => {
-  const { teamId } = req.body || {};
+  const data = z.object({ teamId: z.string().min(1) }).safeParse(req);
 
-  if (!(typeof teamId === "string")) {
-    return res.status(400).json(generateInvalidBodyError({ teamId: DataType.STRING }));
+  if (data.success == false) {
+    return res.status(400).json(generateInvalidBodyError({ teamId: DataType.STRING }, data.error));
   }
+
+  const { teamId } = data.data;
 
   const team = await prisma.team.findUnique({
     where: {
       pid: teamId,
+    },
+    select: {
+      discipline: { select: { name: true } },
+      pid: true,
+      leaderEmail: true,
     },
   });
 
@@ -123,9 +124,46 @@ export const requestToken = async (req: Request, res: Response) => {
 
   (await mailClient).set(usid, team.pid);
 
-  // TODO: fix "eventname"
-  // let teamName = await prisma.team.findUnique({ where: { pid: teamId }, select: { discipline: { select: { event: { select: { name: true } } } } } });
-  verificationMail(team.leaderEmail, "eventname", usid);
+  verificationMail(team.leaderEmail, team.discipline.name, usid);
+
+  res.status(200).json({ type: "sucess", payload: { message: "Email sent!" } });
+};
+
+export const requestTokenEmail = async (req: Request, res: Response) => {
+  const data = z.object({ email: z.string().min(1) }).safeParse(req);
+
+  if (data.success == false) {
+    return res.status(400).json(generateInvalidBodyError({ email: DataType.STRING }, data.error));
+  }
+
+  const { email } = data.data;
+
+  const teams = await prisma.team.findMany({
+    where: {
+      leaderEmail: email,
+    },
+    select: {
+      discipline: { select: { name: true } },
+      pid: true,
+      leaderEmail: true,
+    },
+  });
+
+  if (!teams) {
+    return res.status(404).json(generateError("Team does not exist!"));
+  }
+
+  const team = teams[0]; //REVIEW: maybe a email should be only able to be responsible for one team
+
+  if (!team) {
+    return res.status(404).json(generateError("Team does not exist!"));
+  }
+
+  const usid = nanoid();
+
+  (await mailClient).set(usid, team.pid);
+
+  verificationMail(team.leaderEmail, team.discipline.name, usid);
 
   res.status(200).json({ type: "sucess", payload: { message: "Email sent!" } });
 };
@@ -180,5 +218,4 @@ export const verifyEmail = async (req: Request, res: Response) => {
 
     throw e;
   }
-
 };

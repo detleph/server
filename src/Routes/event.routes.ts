@@ -1,12 +1,6 @@
 import Express from "express";
 import { string } from "zod";
-import {
-  addEvent,
-  deleteEvent,
-  getAllEvents,
-  getEvent,
-  updateEvent,
-} from "../Controllers/event.controller";
+import { addEvent, deleteEvent, getAllEvents, getEvent, updateEvent } from "../Controllers/event.controller";
 import { requireAuthentication } from "../Middleware/auth/auth";
 const router = Express.Router();
 

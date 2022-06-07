@@ -29,7 +29,9 @@ export const getAllAdmins = async (req: Request, res: Response) => {
   }
 
   // TODO: Add exception handling
-  const users = await prisma.admin.findMany({ select: { pid: true, name: true, permission_level: true, groups: { select: { pid: true } } } });
+  const users = await prisma.admin.findMany({
+    select: { pid: true, name: true, permission_level: true, groups: { select: { pid: true } } },
+  });
 
   res.status(200).json({
     type: "success",

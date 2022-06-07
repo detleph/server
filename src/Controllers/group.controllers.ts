@@ -38,7 +38,7 @@ const detailedGroup = {
   organisation: { select: { pid: true, name: true } },
   participants: { select: { pid: true, firstName: true, lastName: true } },
   admins: { select: { pid: true, name: true } },
-}
+};
 
 export const _getAllGroups = async (res: Response, organisationId: string | undefined) => {
   const groups = await prisma.group.findMany({
@@ -88,12 +88,12 @@ export const getGroup = async (req: Request<GetGroupQueryParams>, res: Response)
       where: { pid },
       select: req.auth?.isAuthenticated
         ? {
-          pid: true,
-          name: true,
-          organisation: { select: { pid: true, name: true } },
-          admins: { select: { pid: true, name: true } },
-          participants: { select: { pid: true } },
-        }
+            pid: true,
+            name: true,
+            organisation: { select: { pid: true, name: true } },
+            admins: { select: { pid: true, name: true } },
+            participants: { select: { pid: true } },
+          }
         : basicGroup,
     });
 
@@ -112,15 +112,15 @@ export const getGroup = async (req: Request<GetGroupQueryParams>, res: Response)
           },
           ...(req.auth?.isAuthenticated
             ? {
-              admins: group.admins?.map((admin) => ({
-                ...admin,
-                _links: [{ rel: "self", type: "GET", href: `/api/admins/${admin.pid}` }],
-              })),
-              participants: group.participants?.map((participant) => ({
-                ...participant,
-                _links: [{ rel: "self", type: "GET", href: `/api/participant/${participant.pid}` }],
-              })),
-            }
+                admins: group.admins?.map((admin) => ({
+                  ...admin,
+                  _links: [{ rel: "self", type: "GET", href: `/api/admins/${admin.pid}` }],
+                })),
+                participants: group.participants?.map((participant) => ({
+                  ...participant,
+                  _links: [{ rel: "self", type: "GET", href: `/api/participant/${participant.pid}` }],
+                })),
+              }
             : {}),
         },
       },

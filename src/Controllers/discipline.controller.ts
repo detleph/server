@@ -168,7 +168,14 @@ export const createDiscipline = async (req: Request<{ eventPid: string }, {}, Cr
 
   try {
     const discipline = await prisma.discipline.create({
-      data: { name, minTeamSize, maxTeamSize, briefDescription, fullDescription, event: { connect: { pid: req.params.eventPid } } },
+      data: {
+        name,
+        minTeamSize,
+        maxTeamSize,
+        briefDescription,
+        fullDescription,
+        event: { connect: { pid: req.params.eventPid } },
+      },
       select: basicDiscipline,
     });
 

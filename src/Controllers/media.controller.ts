@@ -10,6 +10,7 @@ import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import { generateInvalidBodyError, DataType } from "./common";
 import { unlink } from "fs/promises";
 import ForwardableError from "../Middleware/error/ForwardableError";
+import { table } from "console";
 
 require("express-async-errors");
 
@@ -204,21 +205,26 @@ export const linkMedia = async (req: Request<{ pid: string }, {}, { mediaPid: st
     );
   }
 
-  const updatedRec = await getPrismaUpdateFKT(tableToUpdate[2])({
-    where: { pid },
-    data: {
-      visual: { connect: { pid: mediaPid } },
-    },
-  });
+  try {
+    const updatedRec = await getPrismaUpdateFKT(tableToUpdate[2])({
+      where: { pid },
+      data: {
+        visual: { connect: { pid: mediaPid } },
+      },
+    });
 
-  if (!updatedRec) {
-    throw new NotFoundError(tableToUpdate[2], pid);
+    return res.status(200).json({
+      type: "success",
+      payload: { message: "Linking with the visual was successful" },
+    });
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+      throw new NotFoundError(tableToUpdate[2], pid);
+    }
+
+    throw e;
   }
 
-  return res.status(200).json({
-    type: "success",
-    payload: {},
-  });
 };
 
 export const unlinkMedia = async (req: Request<{ pid: string; mediaPid: string }>, res: Response) => {

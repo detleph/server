@@ -7,6 +7,8 @@ import { Prisma } from "@prisma/client";
 import NotFoundError from "../Middleware/error/NotFoundError";
 import { requireResponsibleForGroups } from "../Middleware/auth/auth";
 import AuthError from "../Middleware/error/AuthError";
+import { runInNewContext } from "vm";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 
 require("express-async-errors");
 
@@ -31,6 +33,9 @@ export const basicTeam = {
 };
 
 export const getTeams = async (req: Request, res: Response) => {
+  if (req.auth?.permission_level == "STANDARD") {
+    throw new AuthError("A STANDARD Admin is not allowed to get all teams!");
+  }
   const teams = await prisma.team.findMany({ select: basicTeam });
 
   res.status(200).json({ type: "success", payload: { teams } });
@@ -41,8 +46,8 @@ export const getTeam = async (req: Request<{ pid: string }>, res: Response) => {
 
   if (req.teamleader?.isAuthenticated) {
     await requireLeaderOfTeam(req.teamleader, pid);
-  } else {
-    await requireResponsibleForGroups(req.auth, pid);
+  } else if (req.auth?.permission_level == "STANDARD") {
+    requireResponsibleForGroups(req.auth, await getGroupsByTeamPid(pid));
   }
 
   const team = await prisma.team.findUnique({
@@ -62,8 +67,8 @@ export const updateTeam = async (req: Request, res: Response) => {
 
   if (req.teamleader?.isAuthenticated) {
     await requireLeaderOfTeam(req.teamleader, pid);
-  } else {
-    await requireResponsibleForGroups(req.auth, await getGroupsByTeamPid(pid));
+  } else if (req.auth?.permission_level == "STANDARD") {
+    requireResponsibleForGroups(req.auth, await getGroupsByTeamPid(pid));
   }
 
   const result = TeamBody.omit({ partGroupId: true, partFirstName: true, partLastName: true }).safeParse(req.body);
@@ -117,9 +122,17 @@ export const deleteTeam = async (req: Request, res: Response) => {
     throw new AuthError("STANDARD Admins are not allowed to delete Teams!")
   }
 
-  await prisma.team.delete({ where: { pid } });
+  try {
+    await prisma.team.delete({ where: { pid } });
 
-  res.status(204).json({ type: "success", payload: { message: "Sucesfully deleted team" } });
+    res.status(204).json({ type: "success", payload: { message: "Sucesfully deleted team" } });
+  } catch (e) {
+    if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
+      throw new NotFoundError("team", pid);
+    }
+
+    throw e;
+  }
 };
 
 export async function checkTeamExistence(teamPid: string) {

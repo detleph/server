@@ -7,6 +7,8 @@ import { DataType, generateError, generateInvalidBodyError } from "./common";
 import { generateTeamleaderJWT } from "../Middleware/auth/teamleaderAuth";
 import { createRolesForTeam } from "./role.controller";
 import { z } from "zod";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
+import NotFoundError from "../Middleware/error/NotFoundError";
 
 require("express-async-errors");
 
@@ -49,50 +51,55 @@ export const register = async (req: Request<{}, {}, CreateTeamBody>, res: Respon
 
   const body = result.data;
 
-  const group = prisma.group.findUnique({ where: { pid: body.partGroupId } });
-
-  if (typeof group == null) {
-    return res.status(404).json(generateError("Specified group was not found!"));
-  }
-
-  const discipline = prisma.discipline.findUnique({ where: { pid: body.disciplineId } });
-
-  if (typeof discipline == null) {
-    return res.status(404).json(generateError("Specified discipline was not found!"));
-  }
-
-  const team = await prisma.team.create({
-    data: {
-      leaderEmail: body.leaderEmail,
-      name: body.teamName,
-      roles: undefined,
-      discipline: { connect: { pid: body.disciplineId } },
-      participants: {
-        create: {
-          firstName: body.partFirstName,
-          lastName: body.partLastName,
-          relevance: "TEAMLEADER",
-          group: { connect: { pid: body.partGroupId } },
+  try {
+    const team = await prisma.team.create({
+      data: {
+        leaderEmail: body.leaderEmail,
+        name: body.teamName,
+        roles: undefined,
+        discipline: { connect: { pid: body.disciplineId } },
+        participants: {
+          create: {
+            firstName: body.partFirstName,
+            lastName: body.partLastName,
+            relevance: "TEAMLEADER",
+            group: { connect: { pid: body.partGroupId } },
+          },
         },
       },
-    },
-    select: {
-      pid: true,
-      name: true,
-      discipline: { select: { pid: true } },
-    },
-  });
+      select: {
+        pid: true,
+        name: true,
+        discipline: { select: { pid: true } },
+      },
+    });
 
-  await createRolesForTeam(team.pid);
+    await createRolesForTeam(team.pid);
 
-  const usid = nanoid();
+    const usid = nanoid();
 
-  (await mailClient).set(usid, team.pid);
+    (await mailClient).set(usid, team.pid);
 
-  // TODO: fix "eventname"
-  verificationMail(req.body.leaderEmail, "eventname", usid);
+    const eventname = await prisma.discipline.findUnique({ where: { pid: body.disciplineId }, select: { event: { select: { name: true, } } } }).event.name;
+    verificationMail(req.body.leaderEmail, eventname, usid);
 
-  res.status(201).json({ type: "success", payload: { team } });
+    return res.status(201).json({ type: "success", payload: { team } });
+
+  } catch (e) {
+    if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
+      return res.status(404).json({
+        type: "error",
+        payload: {
+          message: `Could not connect to discipline with the ID '${body.disciplineId}' or could not connect participant to group with the ID '${body.partGroupId}'`,
+        },
+      });
+    }
+
+    throw e;
+  }
+
+
+
 };
 
 export const requestToken = async (req: Request, res: Response) => {
@@ -117,6 +124,7 @@ export const requestToken = async (req: Request, res: Response) => {
   (await mailClient).set(usid, team.pid);
 
   // TODO: fix "eventname"
+  // let teamName = await prisma.team.findUnique({ where: { pid: teamId }, select: { discipline: { select: { event: { select: { name: true } } } } } });
   verificationMail(team.leaderEmail, "eventname", usid);
 
   res.status(200).json({ type: "sucess", payload: { message: "Email sent!" } });
@@ -145,23 +153,32 @@ export const verifyEmail = async (req: Request, res: Response) => {
     });
   }
 
-  const team = await prisma.team.update({
-    where: {
-      pid: acc,
-    },
-    data: {
-      verified: true,
-    },
-  });
+  try {
+    const team = await prisma.team.update({
+      where: {
+        pid: acc,
+      },
+      data: {
+        verified: true,
+      },
+    });
 
-  mailClient.set(code, "");
+    mailClient.set(code, "");
 
-  const token = generateTeamleaderJWT(team);
+    const token = generateTeamleaderJWT(team);
 
-  res.cookie("teamLeaderToken", token, {
-    path: "/",
-    maxAge: 1000 * 60 * 60 * 24 * 4,
-  });
+    res.cookie("teamLeaderToken", token, {
+      path: "/",
+      maxAge: 1000 * 60 * 60 * 24 * 4,
+    });
 
-  res.status(200).json({ type: "succes", payload: { token } });
+    res.status(200).json({ type: "succes", payload: { token } });
+  } catch (e) {
+    if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
+      throw new NotFoundError("discipline", acc);
+    }
+
+    throw e;
+  }
+
 };

@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { Request, Response } from "express";
 import { z } from "zod";
 import prisma from "../lib/prisma";
@@ -61,7 +62,7 @@ export async function getRolesForTeam(req: Request<{ pid: string }>, res: Respon
   if (req.teamleader?.isAuthenticated) {
     await requireLeaderOfTeam(req.teamleader, pid);
   } else {
-    await requireResponsibleForGroups(req.auth, await getGroupsByTeamPid(pid));
+    requireResponsibleForGroups(req.auth, await getGroupsByTeamPid(pid));
   }
 
   const roles = await prisma.role.findMany({
@@ -84,7 +85,6 @@ export async function getRolesForTeam(req: Request<{ pid: string }>, res: Respon
 
 const AssignParticipantToRoleBody = z.object({
   participantPid: z.string().uuid(),
-  teamPid: z.string().uuid(),
 });
 
 // requires: auth(leader of the team)
@@ -102,31 +102,29 @@ export async function assignParticipantToRole(req: Request<{ pid: string }>, res
   if (req.teamleader?.isAuthenticated) {
     requireResponsibleForParticipant(req.teamleader, participantPid);
   } else {
-    await requireResponsibleForGroups(req.auth, await getGroupByParticipantPid(participantPid));
+    requireResponsibleForGroups(req.auth, await getGroupByParticipantPid(participantPid));
   }
 
-  const schema = await prisma.role.findFirst({
-    where: { pid, team: { participants: { some: { pid: participantPid } } } },
-    select: { participant: { select: { pid: true, firstName: true, lastName: true } } },
-  });
+  try {
+    const schema = await prisma.role.update({ where: { pid }, data: { participant: { connect: { pid: participantPid } } }, select: detailedRole });
 
-  if (!schema) {
-    return res.status(404).json({
-      type: "error",
+    return res.status(200).json({
+      type: "success",
       payload: {
-        message: `No role with the ID '${pid}' could be found in the scope of the participant with the ID '${participantPid}'`,
+        message: `The participant with ID '${participantPid}' was successfully assigned to the role with ID '${pid}'`,
+        ...(schema.participant ? { unassigned: schema.participant } : {}),
       },
     });
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+      return res.status(404).json({
+        type: "error",
+        payload: {
+          message: `No role with the ID '${pid}' could be found in the scope of the participant with the ID '${participantPid}'`,
+        },
+      });
+    }
+
+    throw e;
   }
-
-  // No error handling should be neccesary as the existence of the role and participant have already been checked above
-  await prisma.role.update({ where: { pid }, data: { participant: { connect: { pid: participantPid } } } });
-
-  return res.status(200).json({
-    type: "success",
-    payload: {
-      message: `The participant with ID '${participantPid}' was successfully assigned to the role with ID '${pid}'`,
-      ...(schema.participant ? { unassigned: schema.participant } : {}),
-    },
-  });
 }

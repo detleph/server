@@ -28,7 +28,7 @@ const detailedOrganisation = {
       pid: true,
       name: true,
       date: true,
-      description: true,
+      briefDescription: true,
     },
   },
 } as const;
@@ -191,7 +191,7 @@ export const updateOrganisation = async (
     });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
-      throw new NotFoundError("discipline", pid);
+      throw new NotFoundError("organisation", pid);
     }
 
     throw e;

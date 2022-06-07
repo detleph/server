@@ -3,7 +3,7 @@ import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import { Request, Response } from "express";
 import { z } from "zod";
 import prisma from "../lib/prisma";
-import { DurationSchemaT, parseSchema, PointSchemaT } from "../lib/result_schema";
+import { DurationSchema, parseSchema, PointSchema } from "../lib/result_schema";
 import NotFoundError from "../Middleware/error/NotFoundError";
 import SchemaError from "../Middleware/error/SchemaError";
 import {
@@ -19,7 +19,7 @@ require("express-async-errors");
 
 const RoleSchemaBody = z.object({
   name: z.string().min(1),
-  schema: z.string(),
+  schema: z.string(PointSchema).or(z.string(DurationSchema)),
 });
 
 const UpdateBody = RoleSchemaBody.partial();
@@ -138,7 +138,7 @@ export const createRoleSchema = async (
 
 export const UpdateRoleSchema = async (req: Request<{ pid: string }>, res: Response) => {
   if (req.auth?.permission_level !== "ELEVATED") {
-    res.status(403).json(createInsufficientPermissionsError());
+    return res.status(403).json(createInsufficientPermissionsError());
   }
 
   const { pid } = req.params;
@@ -150,7 +150,7 @@ export const UpdateRoleSchema = async (req: Request<{ pid: string }>, res: Respo
       generateInvalidBodyError(
         {
           name: DataType.STRING,
-          schema: DataType.STRING,
+          schema: DataType.RESULT_SCHEMA,
         },
         result.error
       )

@@ -137,12 +137,14 @@ export const addEvent = async (req: Request, res: Response) => {
     );
   }
 
+  const body = result.data;
+
   const event = await prisma.event.create({
     data: {
-      name: req.body.name,
-      date: req.body.date,
-      briefDescription: req.body.briefDescription,
-      fullDescription: req.body.fullDescription,
+      name: body.name,
+      date: body.date,
+      briefDescription: body.briefDescription,
+      fullDescription: body.fullDescription,
     },
     select: basicEvent,
   });
@@ -206,7 +208,7 @@ export const updateEvent = async (req: Request<{ pid: string }>, res: Response) 
     });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
-      throw new NotFoundError("discipline", pid);
+      throw new NotFoundError("event", pid);
     }
 
     throw e;
@@ -231,7 +233,7 @@ export const deleteEvent = async (req: Request<DeleteEventQueryParams>, res: Res
     return res.status(204).end();
   } catch (e) {
     if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
-      throw new NotFoundError("discipline", pid);
+      throw new NotFoundError("event", pid);
     }
 
     throw e;

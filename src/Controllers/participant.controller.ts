@@ -16,8 +16,6 @@ const InitialParticipant = z.object({
   groupPid: z.string().min(1).uuid(),
 });
 
-const ParticipantBody = InitialParticipant.extend({ teamPid: z.string().uuid() });
-
 const returnedParticipant = {
   pid: true,
   firstName: true,
@@ -41,7 +39,7 @@ const returnedParticipant = {
 export const createParticipant = async (req: Request<{ teamPid: string }>, res: Response) => {
   const { teamPid } = req.params;
 
-  const result = ParticipantBody.safeParse(req.body);
+  const result = InitialParticipant.safeParse(req.body);
 
   if (result.success === false) {
     return res.status(400).json(
@@ -59,20 +57,20 @@ export const createParticipant = async (req: Request<{ teamPid: string }>, res: 
 
   if (req.teamleader?.isAuthenticated) {
     await requireLeaderOfTeam(req.teamleader, teamPid);
-  } else {
+  } else if (req.auth?.permission_level == "STANDARD") {
     requireResponsibleForGroups(req.auth, body.groupPid);
   }
 
   try {
     const discipline = await prisma.team.findUnique({
-      where: { pid: body.teamPid },
+      where: { pid: teamPid },
       select: { discipline: true }
     });
 
     const maxteamsize = discipline?.discipline.maxTeamSize;
 
     const userCount = await prisma.participant.count({
-      where: { team: { pid: body.teamPid } }
+      where: { team: { pid: teamPid } }
     });
 
     if (maxteamsize == userCount) {
@@ -85,7 +83,7 @@ export const createParticipant = async (req: Request<{ teamPid: string }>, res: 
         lastName: body.lastName,
         relevance: "MEMBER",
         group: { connect: { pid: body.groupPid } },
-        team: { connect: { pid: body.teamPid } },
+        team: { connect: { pid: teamPid } },
       },
       select: returnedParticipant,
     });
@@ -95,7 +93,7 @@ export const createParticipant = async (req: Request<{ teamPid: string }>, res: 
     if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
       return res
         .status(404)
-        .json(generateError(`Could not link to team with ID '${body.teamPid}, or group with ID ${body.groupPid}'`));
+        .json(generateError(`Could not link to team with ID '${teamPid}, or group with ID ${body.groupPid}'`));
     }
     throw e;
   }
@@ -107,6 +105,8 @@ export const updateParticipant = async (req: Request<{ pid: string }>, res: Resp
 
   if (req.teamleader?.isAuthenticated) {
     await requireResponsibleForParticipant(req.teamleader, pid);
+  } else if (req.auth?.permission_level == "STANDARD") {
+    requireResponsibleForGroups(req.auth, await getGroupByParticipantPid(pid));
   }
 
   const result = InitialParticipant.partial().safeParse(req.body);
@@ -143,7 +143,9 @@ export const updateParticipant = async (req: Request<{ pid: string }>, res: Resp
     });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
-      throw new NotFoundError("participant", pid);
+      return res
+        .status(404)
+        .json(generateError(`Could not find participant '${pid}, or link to group with ID ${body.groupPid}.'`));
     }
 
     throw e;
@@ -156,7 +158,7 @@ export const deleteParticipant = async (req: Request<{ pid: string }>, res: Resp
 
   if (req.teamleader?.isAuthenticated) {
     await requireResponsibleForParticipant(req.teamleader, pid);
-  } else {
+  } else if (req.auth?.permission_level == "STANDARD") {
     requireResponsibleForGroups(req.auth, await getGroupByParticipantPid(pid));
   }
 

@@ -18,6 +18,7 @@ import teamRouter from "./Routes/team.routes";
 import roleRouter from "./Routes/role.routes";
 import participantRouter from "./Routes/participant.routes";
 import { notFoundHandler, rootHandler } from "./Middleware/error/defaultRoutes";
+import { env } from "process";
 
 // Set up async error handling
 require("express-async-errors");
@@ -61,7 +62,7 @@ async function main() {
     );*/
     //Cors is for some reason broken on our server so set the Cors headers manually
     app.use(function (req, res, next) {
-      res.header("Access-Control-Allow-Origin", "https://josport.at");
+      res.header("Access-Control-Allow-Origin", process.env.DOMAIN);
       res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
       next();
     });
@@ -92,7 +93,7 @@ async function main() {
   app.use("/api/role-schemas", roleSchemaRouter);
 
   app.use("/api/media", mediaRouter);
-  
+
   app.use("/api/users", userRouter);
 
   app.use("/api/teams", teamRouter);

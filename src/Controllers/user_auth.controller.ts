@@ -1,4 +1,4 @@
-/*import { Request, Response } from "express";
+import { Request, Response } from "express";
 import prisma from "../lib/prisma";
 import { mailClient } from "../lib/redis";
 import { nanoid } from "nanoid";
@@ -214,4 +214,3 @@ export const verifyEmail = async (req: Request, res: Response) => {
     throw e;
   }
 };
-*/

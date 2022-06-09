@@ -18,7 +18,7 @@ router.get("/:pid", getRoleSchema);
 
 router.patch("/:pid", requireConfiguredAuthentication({ optional: false, type: "admin" }), updateRoleSchema);
 
-router.delete("/:pid", requireConfiguredAuthentication({ optional: false, type: "admin" }), deleteRoleSchema)
+router.delete("/:pid", requireConfiguredAuthentication({ optional: false, type: "admin" }), deleteRoleSchema);
 
 disciplineRouter.get("/:disciplinePid/role-schemas", getAllRoleSchemasWithParam);
 

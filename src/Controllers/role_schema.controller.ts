@@ -136,7 +136,7 @@ export const createRoleSchema = async (
   }
 };
 
-export const UpdateRoleSchema = async (req: Request<{ pid: string }>, res: Response) => {
+export const updateRoleSchema = async (req: Request<{ pid: string }>, res: Response) => {
   if (req.auth?.permission_level !== "ELEVATED") {
     return res.status(403).json(createInsufficientPermissionsError());
   }
@@ -177,7 +177,27 @@ export const UpdateRoleSchema = async (req: Request<{ pid: string }>, res: Respo
     });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
-      throw new NotFoundError("discipline", pid);
+      throw new NotFoundError("role-schema", pid);
+    }
+
+    throw e;
+  }
+};
+
+export const deleteRoleSchema = async (req: Request<{ pid: string }>, res: Response) => {
+  if (req.auth?.permission_level !== "ELEVATED") {
+    return res.status(403).json(createInsufficientPermissionsError());
+  }
+
+  const { pid } = req.params;
+
+  try {
+    await prisma.roleSchema.delete({ where: { pid } });
+
+    return res.status(204).end();
+  } catch (e) {
+    if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
+      throw new NotFoundError("role-schema", pid);
     }
 
     throw e;

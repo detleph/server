@@ -20,8 +20,6 @@ const InitialParticipant = z.object({
   groupPid: z.string().min(1).uuid(),
 });
 
-const ParticipantBody = InitialParticipant.extend({ teamPid: z.string().uuid() });
-
 const basicParticipant = {
   pid: true,
   firstName: true,
@@ -133,7 +131,7 @@ export const getParticipantForRole = async (req: Request<{ rolePid: string }>, r
 export const createParticipant = async (req: Request<{ teamPid: string }>, res: Response) => {
   const { teamPid } = req.params;
 
-  const result = ParticipantBody.safeParse(req.body);
+  const result = InitialParticipant.safeParse(req.body);
 
   if (result.success === false) {
     return res.status(400).json(

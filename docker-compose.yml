@@ -35,3 +35,9 @@ services:
       - DATABASE_URL=postgresql://server:${DATABASE_PASSWORD}@postgres:5432/management?schema=public
       - DATABASE_USER=server
       - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - DOMAIN=${DOMAIN}
+      - MAILUSER=${MAILUSER}
+      - MAILPASSWORD=${MAILPASSWORD}
+      - FRONTEND_MAIL_ENDPOINT=https://josport.at/authteamleader/
+      - ALLOW_ORIGIN=https://josport.at

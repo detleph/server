@@ -44,11 +44,7 @@ const returnedParticipant = {
   },
 } as const;
 
-const _getAllParticipants = async (
-  res: Response,
-  req: Request,
-  teamPid?: string
-) => {
+const _getAllParticipants = async (res: Response, req: Request, teamPid?: string) => {
   if (req.teamleader?.isAuthenticated) {
     await requireLeaderOfTeam(req.teamleader, teamPid);
   } else if (req.auth?.permission_level == "STANDARD") {

@@ -11,6 +11,7 @@ import { requireConfiguredAuthentication } from "../Middleware/auth/auth";
 import { isTeamleaderJWTPayload, TeamleaderJWTPayload } from "../Middleware/auth/teamleaderAuth";
 import { AuthJWTPayload } from "./admin_auth.controller";
 import AuthError from "../Middleware/error/AuthError";
+import { getGroupsByTeamPid } from "./team.controller";
 
 require("express-async-errors");
 
@@ -45,14 +46,16 @@ const returnedParticipant = {
 
 const _getAllParticipants = async (
   res: Response,
-  authentication: TeamleaderJWTPayload | AuthJWTPayload,
+  req: Request,
   teamPid?: string
 ) => {
-  if (isTeamleaderJWTPayload(authentication)) {
-    teamPid = authentication.team;
-  } else {
-    if (authentication.permission_level !== "ELEVATED") {
-      throw new AuthError();
+  if (req.teamleader?.isAuthenticated) {
+    await requireLeaderOfTeam(req.teamleader, teamPid);
+  } else if (req.auth?.permission_level == "STANDARD") {
+    if (!teamPid) {
+      throw new AuthError("A STANDARD Admin is not allowed to fetch all Participants!");
+    } else {
+      requireResponsibleForGroups(req.auth, await getGroupsByTeamPid(teamPid));
     }
   }
 
@@ -70,47 +73,18 @@ const _getAllParticipants = async (
 };
 
 export const getAllParticipants = async (req: Request<{}, {}, {}, { teamPid?: string }>, res: Response) => {
-  const auth = req.auth || req.teamleader;
-
-  if (!auth) {
-    throw new AuthError("No authentication provided");
-  }
-
-  return _getAllParticipants(res, auth, req.query.teamPid);
+  return _getAllParticipants(res, req, req.query.teamPid);
 };
 
 export const getAllParticipantsParams = async (req: Request<{ teamPid: string }>, res: Response) => {
-  const auth = req.auth || req.teamleader;
-
-  if (!auth) {
-    throw new AuthError("Not authentication provided");
-  }
-
-  return _getAllParticipants(res, auth, req.params.teamPid);
+  return _getAllParticipants(res, req, req.params.teamPid);
 };
 
 export const getParticipantForRole = async (req: Request<{ rolePid: string }>, res: Response) => {
-  let authenticated = false;
-
-  if (req.auth && req.auth.permission_level !== "ELEVATED") {
-    return res.status(403).json(createInsufficientPermissionsError());
-  } else if (req.auth) {
-    authenticated = true;
-  }
-
   const participant = await prisma.participant.findFirst({
     where: { roles: { some: { pid: req.params.rolePid } } },
     select: returnedParticipant,
   });
-
-  if (!authenticated) {
-    requireLeaderOfTeam(req.teamleader, participant?.team.pid);
-    authenticated = true;
-  }
-
-  if (!authenticated) {
-    throw new AuthError(); // REVIEW: Is this check neccesary?
-  }
 
   if (!participant) {
     return res.status(404).json({
@@ -119,6 +93,12 @@ export const getParticipantForRole = async (req: Request<{ rolePid: string }>, r
         message: `Could not find a participant for the role with the ID '${req.params.rolePid}'`,
       },
     });
+  }
+
+  if (req.teamleader?.isAuthenticated) {
+    await requireLeaderOfTeam(req.teamleader, participant?.team.pid);
+  } else if (req.auth?.permission_level == "STANDARD") {
+    requireResponsibleForGroups(req.auth, await getGroupsByTeamPid(participant?.team.pid));
   }
 
   return res.status(200).json({

@@ -16,10 +16,7 @@ require("express-async-errors");
 const router = express.Router();
 
 router.get(
-  "/",
-  requireConfiguredAuthentication({ type: { admin: true, teamleader: true }, optional: false }),
-  getAllParticipants
-);
+  "/", requireConfiguredAuthentication({ optional: false, type: { admin: true, teamleader: true } }), getAllParticipants);
 
 teamRouter.get(
   "/:teamPid/particpants",

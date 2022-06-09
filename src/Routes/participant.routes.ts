@@ -22,7 +22,7 @@ router.get(
 );
 
 teamRouter.get(
-  "/:pid/particpants",
+  "/:teamPid/particpants",
   requireConfiguredAuthentication({ type: { admin: true, teamleader: true }, optional: false }),
   getAllParticipantsParams
 );
@@ -35,7 +35,7 @@ roleRouter.get(
 
 teamRouter.post<"/:teamPid/participants/", { teamPid: string }>(
   "/:teamPid/participants/",
-  requireConfiguredAuthentication({ optional: true, type: { admin: true, teamleader: true } }),
+  requireConfiguredAuthentication({ optional: false, type: { admin: true, teamleader: true } }),
   createParticipant
 );
 

@@ -89,13 +89,6 @@ export const updateTeam = async (req: Request, res: Response) => {
   const body = result.data;
 
   try {
-    requireLeaderOfTeam(req.teamleader, pid);
-  } catch {
-    // TODO: DO NOT CATCH THESE ERRORS
-    return res.status(401).json(createInsufficientPermissionsError("STANDARD"));
-  }
-
-  try {
     const team = await prisma.team.update({
       where: {
         pid: pid,

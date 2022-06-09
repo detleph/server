@@ -68,7 +68,7 @@ export async function getRolesForTeam(req: Request<{ pid: string }>, res: Respon
 
   if (req.teamleader?.isAuthenticated) {
     await requireLeaderOfTeam(req.teamleader, pid);
-  } else {
+  } else if (req.auth?.permission_level == "STANDARD") {
     requireResponsibleForGroups(req.auth, await getGroupsByTeamPid(pid));
   }
 
@@ -88,10 +88,16 @@ export async function getRolesForTeam(req: Request<{ pid: string }>, res: Respon
 export async function getRole(req: Request<{ rolePid: string }>, res: Response) {
   const rolePid = req.params.rolePid;
 
-  const role = await prisma.role.findUnique({ where: { pid: rolePid }, select: basicRole });
+  const role = await prisma.role.findUnique({ where: { pid: rolePid }, select: detailedRole });
 
   if (!role) {
     throw new NotFoundError("role", rolePid);
+  }
+
+  if (req.teamleader?.isAuthenticated) {
+    await requireLeaderOfTeam(req.teamleader, role.team.pid);
+  } else if (req.auth?.permission_level == "STANDARD" && role.participant?.pid !== undefined) {
+    requireResponsibleForGroups(req.auth, await getGroupByParticipantPid(role.participant?.pid));
   }
 
   return res.status(200).json({

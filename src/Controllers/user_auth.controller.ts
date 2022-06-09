@@ -97,7 +97,7 @@ export const register = async (req: Request<{}, {}, CreateTeamBody>, res: Respon
 };
 
 export const requestToken = async (req: Request, res: Response) => {
-  const data = z.object({ teamId: z.string().min(1) }).safeParse(req);
+  const data = z.object({ teamId: z.string().min(1) }).safeParse(req.body);
 
   if (data.success == false) {
     return res.status(400).json(generateInvalidBodyError({ teamId: DataType.STRING }, data.error));
@@ -130,7 +130,7 @@ export const requestToken = async (req: Request, res: Response) => {
 };
 
 export const requestTokenEmail = async (req: Request, res: Response) => {
-  const data = z.object({ email: z.string().min(1) }).safeParse(req);
+  const data = z.object({ email: z.string().email() }).safeParse(req.body);
 
   if (data.success == false) {
     return res.status(400).json(generateInvalidBodyError({ email: DataType.STRING }, data.error));
@@ -149,15 +149,14 @@ export const requestTokenEmail = async (req: Request, res: Response) => {
     },
   });
 
-  if (!teams) {
-    return res.status(404).json(generateError("Team does not exist!"));
+  if (teams.length <= 0) {
+    // REVIEW: Potential for time-based attacks
+    return res
+      .status(200)
+      .json({ type: "sucess", payload: { message: "If a team with the provided email exist, the token was sent!" } });
   }
 
   const team = teams[0]; //REVIEW: maybe a email should be only able to be responsible for one team
-
-  if (!team) {
-    return res.status(404).json(generateError("Team does not exist!"));
-  }
 
   const usid = nanoid();
 
@@ -165,7 +164,9 @@ export const requestTokenEmail = async (req: Request, res: Response) => {
 
   verificationMail(team.leaderEmail, team.discipline.name, usid);
 
-  res.status(200).json({ type: "sucess", payload: { message: "Email sent!" } });
+  res
+    .status(200)
+    .json({ type: "sucess", payload: { message: "If a team with the provided email exist, the token was sent!" } });
 };
 
 export const verifyEmail = async (req: Request, res: Response) => {

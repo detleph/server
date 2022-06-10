@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
-import { DataType, generateInvalidBodyError } from "./common";
+import { createInsufficientPermissionsError, DataType, generateInvalidBodyError } from "./common";
 import { requireLeaderOfTeam } from "../Middleware/auth/teamleaderAuth";
 import { TeamBody } from "./user_auth.controller";
 import { Prisma } from "@prisma/client";

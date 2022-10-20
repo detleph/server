@@ -19,6 +19,7 @@ import roleRouter from "./Routes/role.routes";
 import participantRouter from "./Routes/participant.routes";
 import { notFoundHandler, rootHandler } from "./Middleware/error/defaultRoutes";
 import { env } from "process";
+import { generateDefaultCredentials } from "./Middleware/auth/defaultAdmin";
 
 // Set up async error handling
 require("express-async-errors");
@@ -34,6 +35,7 @@ async function main() {
       "This mode should not be used in any production-near environment as it is significantly less secure than the production mode"
     );
 
+    generateDefaultCredentials();
     // TODO: How should you login to the prod server by default? Maybe random password?
     await prisma.admin.upsert({
       where: { id: 1 },
@@ -49,6 +51,8 @@ async function main() {
     app.use(cors());
   } else {
     logger.info("Using production mode");
+
+    generateDefaultCredentials();
 
     // Configure cors
     /*app.use(

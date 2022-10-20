@@ -20,6 +20,6 @@ export const generateDefaultCredentials = async () => {
     update: {},
   });
 
-  logger.notice("Default admin name is  " + name);
+  logger.notice("Default admin name is:  " + name);
   logger.notice("Confidential password:  " + pw);
 };

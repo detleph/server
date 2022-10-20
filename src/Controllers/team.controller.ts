@@ -3,7 +3,6 @@ import prisma from "../lib/prisma";
 import { createInsufficientPermissionsError, DataType, generateInvalidBodyError } from "./common";
 import { requireLeaderOfTeam } from "../Middleware/auth/teamleaderAuth";
 import { TeamBody } from "./user_auth.controller";
-import { Prisma } from "@prisma/client";
 import NotFoundError from "../Middleware/error/NotFoundError";
 import { requireResponsibleForGroups } from "../Middleware/auth/auth";
 import AuthError from "../Middleware/error/AuthError";
@@ -14,7 +13,17 @@ require("express-async-errors");
 
 export const basicTeam = {
   pid: true,
+  creationDate: true,
   name: true,
+  leaderEmail: true,
+  discipline: { select: { pid: true } },
+};
+
+const detailedTeam = {
+  pid: true,
+  creationDate: true,
+  name: true,
+  leaderEmail: true,
   discipline: { select: { pid: true } },
   roles: {
     select: {
@@ -32,11 +41,17 @@ export const basicTeam = {
   },
 };
 
+const verified = {
+  verified: {
+    equals: true,
+  }
+};
+
 export const getTeams = async (req: Request, res: Response) => {
   if (req.auth?.permission_level == "STANDARD") {
     throw new AuthError("A STANDARD Admin is not allowed to get all teams!");
   }
-  const teams = await prisma.team.findMany({ select: basicTeam });
+  const teams = await prisma.team.findMany({ where: verified, select: basicTeam });
 
   res.status(200).json({ type: "success", payload: { teams } });
 };
@@ -51,8 +66,8 @@ export const getTeam = async (req: Request<{ pid: string }>, res: Response) => {
   }
 
   const team = await prisma.team.findUnique({
-    where: { pid },
-    select: basicTeam,
+    where: { pid, verified },
+    select: detailedTeam,
   });
 
   if (!team) {
@@ -103,7 +118,7 @@ export const updateTeam = async (req: Request, res: Response) => {
 
     res.status(200).json({ type: "success", payload: { team } });
   } catch (e) {
-    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+    if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
       throw new NotFoundError("team", pid);
     }
 
@@ -142,7 +157,7 @@ export async function checkTeamExistence(teamPid: string) {
   if (teamCount == 0) {
     throw new NotFoundError("team", teamPid);
   }
-}
+};
 
 export async function getGroupsByTeamPid(teamPid: string) {
   const team = await prisma.team.findUnique({
@@ -152,9 +167,9 @@ export async function getGroupsByTeamPid(teamPid: string) {
 
   let groups: string[] = [];
 
-  team?.participants.forEach((participant) => {
+  team?.participants.forEach((participant: { group: { pid: string; }; }) => {
     groups.push(participant.group.pid);
   });
 
   return groups;
-}
+};

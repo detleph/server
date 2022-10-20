@@ -67,6 +67,7 @@ model Team {
   name        String
   leaderEmail String
   verified    Boolean @default(false)
+  creationDate DateTime @default(now())
 
   roles        Role[]     @relation(name: "participants")
   participants Participant[]

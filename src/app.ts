@@ -35,24 +35,10 @@ async function main() {
       "This mode should not be used in any production-near environment as it is significantly less secure than the production mode"
     );
 
-    generateDefaultCredentials();
-    // TODO: How should you login to the prod server by default? Maybe random password?
-    await prisma.admin.upsert({
-      where: { id: 1 },
-      create: {
-        name: "admin",
-        password: await argon2.hash("test", { type: argon2.argon2id }),
-        permission_level: "ELEVATED",
-      },
-      update: {},
-    });
-
     // Allow all CORS requests
     app.use(cors());
   } else {
     logger.info("Using production mode");
-
-    generateDefaultCredentials();
 
     // Configure cors
     /*app.use(
@@ -71,6 +57,8 @@ async function main() {
       next();
     });
   }
+
+  generateDefaultCredentials();
 
   // Todo: Everything
 

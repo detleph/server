@@ -66,7 +66,7 @@ export const getTeam = async (req: Request<{ pid: string }>, res: Response) => {
   }
 
   const team = await prisma.team.findUnique({
-    where: { pid, verified },
+    where: {pid: pid},
     select: detailedTeam,
   });
 

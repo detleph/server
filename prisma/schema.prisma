@@ -34,10 +34,10 @@ model Admin {
 }
 
 model Discipline {
-  id               Int    @id @default(autoincrement())
-  pid              String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id               Int     @id @default(autoincrement())
+  pid              String  @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name             String
-  briefDescription String @default("description")
+  briefDescription String  @default("description")
   fullDescription  String?
   minTeamSize      Int
   maxTeamSize      Int
@@ -62,16 +62,16 @@ model RoleSchema {
 }
 
 model Team {
-  id          Int    @id @default(autoincrement())
-  pid         String @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String
-  leaderEmail String
-  verified    Boolean @default(false)
+  id           Int      @id @default(autoincrement())
+  pid          String   @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String
+  leaderEmail  String
+  verified     Boolean  @default(false)
   creationDate DateTime @default(now())
 
-  roles        Role[]     @relation(name: "participants")
+  roles        Role[]        @relation(name: "participants")
   participants Participant[]
-  discipline   Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+  discipline   Discipline    @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
   disciplineId Int
 }
 
@@ -84,7 +84,7 @@ model Participant {
 
   group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
   groupId Int
-  team    Team  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  team    Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
   teamId  Int
   roles   Role[]
 }

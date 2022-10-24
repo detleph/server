@@ -11,6 +11,7 @@ import { generateInvalidBodyError, DataType } from "./common";
 import { unlink } from "fs/promises";
 import ForwardableError from "../Middleware/error/ForwardableError";
 import { table } from "console";
+import logger from "../Middleware/error/logger";
 
 require("express-async-errors");
 
@@ -110,7 +111,11 @@ export const uploadImage = async (req: Request, res: Response) => {
     });
 
     if (!fs.existsSync("media/" + fileName)) {
-      file.mv("media/" + fileName, console.error);
+      file.mv("media/" + fileName, (err) => {
+        if (err) {
+          logger.error(err);
+        }
+      });
     }
 
     return res.status(201).json({
@@ -186,6 +191,10 @@ export const deleteMedia = async (req: Request, res: Response) => {
 
     throw e;
   }
+};
+
+export const mediaNotFoundHandler = (req: Request<{ pid: string }>, res: Response) => {
+  throw new NotFoundError("media", req.params.pid);
 };
 
 export const linkMedia = async (req: Request<{ pid: string }, {}, { mediaPid: string }>, res: Response) => {

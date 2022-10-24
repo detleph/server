@@ -6,6 +6,7 @@ import {
   getAllMedia,
   getMediaMeta,
   linkMedia,
+  mediaNotFoundHandler,
   unlinkMedia,
   uploadImage,
 } from "../Controllers/media.controller";
@@ -25,6 +26,9 @@ router.get("/", requireAuthentication, getAllMedia); // Reading all files should
 router.get("/:pid/meta", getMediaMeta);
 
 router.delete("/:pid", requireAuthentication, deleteMedia);
+
+router.get("/:pid", mediaNotFoundHandler);
+router.head("/:pid", mediaNotFoundHandler);
 
 eventRouter.post<"/:pid/media", { pid: string }>("/:pid/media", requireAuthentication, linkMedia);
 

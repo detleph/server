@@ -72,47 +72,24 @@ export const getEvent = async (req: Request, res: Response) => {
     );
     return;
   }
-  try {
-    const event = await prisma.event.findUnique({
-      where: {
-        pid: eventId,
-      },
-      select: detailedEvent,
-    });
 
-    if (!event) {
-      throw new NotFoundError("event", eventId);
-    }
+  const event = await prisma.event.findUnique({
+    where: {
+      pid: eventId,
+    },
+    select: detailedEvent,
+  });
 
-    res.status(200).json({
-      type: "success",
-      payload: {
-        event,
-      },
-    });
-  } catch (e) {
-    if (e instanceof Prisma.PrismaClientKnownRequestError) {
-      return res.status(500).json({
-        type: "error",
-        payload: {
-          message: `Internal Server error occured. Try again later`,
-        },
-      });
-    }
-    if (e instanceof Prisma.PrismaClientUnknownRequestError) {
-      return res.status(500).json({
-        type: "error",
-        payload: {
-          message: "Unknown error occurred with your request. Check if your parameters are correct",
-          schema: {
-            eventId: DataType.UUID,
-          },
-        },
-      });
-    }
-
-    throw e;
+  if (!event) {
+    throw new NotFoundError("event", eventId);
   }
+
+  res.status(200).json({
+    type: "success",
+    payload: {
+      event,
+    },
+  });
 };
 
 // requires: auth(ELEVATED)

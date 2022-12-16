@@ -96,7 +96,7 @@ export const getGroup = async (req: Request<GetGroupQueryParams>, res: Response)
       : basicGroup,
   });
   if (!group) {
-    return res.status(404).json(generateError(`The group with ID '${pid}' could not be found`));
+    throw new NotFoundError("group", pid);
   }
   return res.status(200).json({
     type: "success",

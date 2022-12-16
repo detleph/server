@@ -4,6 +4,8 @@ import { AdminLevel } from "@prisma/client";
 import argon2 from "argon2";
 import { AUTH_ERROR, createInsufficientPermissionsError, DataType, generateInvalidBodyError } from "./common";
 import { authClient } from "../lib/redis";
+import NotFoundError from "../Middleware/error/NotFoundError";
+import { notFoundHandler } from "../Middleware/error/defaultRoutes";
 
 require("express-async-errors");
 
@@ -83,12 +85,7 @@ export const createAdmin = async (req: Request<{}, {}, CreateAdminBody>, res: Re
   // Check if all gropus exist
   for (const groupId of groups || []) {
     if (!(await prisma.group.findUnique({ where: { pid: groupId } }))) {
-      return res.status(404).json({
-        type: "error",
-        payload: {
-          message: `The group with ID '${groupId}' could not be found!`,
-        },
-      });
+      throw new NotFoundError("group", groupId);
     }
   }
 
@@ -143,12 +140,7 @@ export const updateForeignPassword = async (
   if (!user_to_upate) {
     // REVIEW: This allows potential attackers (which are authorized with some account)
     //         to test account names
-    return res.status(404).json({
-      type: "error",
-      payload: {
-        message: "The requested user was not found",
-      },
-    });
+    throw new NotFoundError("user", req.params.pid);
   }
 
   if (req.auth.permission_level == "ELEVATED" && user_to_upate.permission_level == "STANDARD") {
@@ -190,12 +182,7 @@ export const updateOwnPassword = async (req: Request<{}, {}, UpdatePasswordBody>
   if (!user_to_upate) {
     // REVIEW: This allows potential attackers (which are authorized with some account)
     //         to test account names
-    return res.status(404).json({
-      type: "error",
-      payload: {
-        message: "The requested user was not found",
-      },
-    });
+    throw new NotFoundError("user", pid);
   }
 
   if (await argon2.verify(user_to_upate.password, req.body.password, { type: argon2.argon2id })) {

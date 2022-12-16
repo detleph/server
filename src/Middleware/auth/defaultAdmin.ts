@@ -10,7 +10,7 @@ export const generateDefaultCredentials = async () => {
 
   const pw: string = crypto.randomBytes(8).toString("base64url");
 
-  await prisma.admin.upsert({
+  const defaultAdmin = await prisma.admin.upsert({
     where: { id: 1 },
     create: {
       name,
@@ -18,8 +18,11 @@ export const generateDefaultCredentials = async () => {
       permission_level: "ELEVATED",
     },
     update: {},
+    select: { name: true },
   });
 
-  logger.notice("Default admin name is:  " + name);
-  logger.notice("Confidential password:  " + pw);
+  if (defaultAdmin.name === name) {
+    logger.notice("Default admin name is:  " + name);
+    logger.notice("Confidential password:  " + pw);
+  }
 };

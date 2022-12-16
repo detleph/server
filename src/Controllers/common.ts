@@ -147,28 +147,16 @@ export async function handleCreateByName(
 
   // Check if link object exsits
 
-  try {
-    // @ts-ignore
-    const linked = await prisma[link.type].findUnique({ where: { pid: link.id }, select: { id: true } });
+  // @ts-ignore
+  const linked = await prisma[link.type].findUnique({ where: { pid: link.id }, select: { id: true } });
 
-    if (!linked) {
-      return res.status(404).json({
-        type: "error",
-        payload: {
-          message: `Could not link to ${link.type} with ID '${link.id}'`,
-        },
-      });
-    }
-  } catch (e) {
-    // REVIEW: Check for valid UUID
-    if (e instanceof PrismaClientUnknownRequestError) {
-      return res.status(400).json({
-        type: "error",
-        payload: {
-          message: "Unknown error occured. This could be due to malformed IDs",
-        },
-      });
-    }
+  if (!linked) {
+    return res.status(404).json({
+      type: "error",
+      payload: {
+        message: `Could not link to ${link.type} with ID '${link.id}'`,
+      },
+    });
   }
 
   // @ts-ignore

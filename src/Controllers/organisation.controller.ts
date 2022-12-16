@@ -91,12 +91,7 @@ export const getOrganisation = async (req: Request<GetOrganisationQueryParams>, 
   });
 
   if (!organisation) {
-    return res.status(404).json({
-      type: "error",
-      payload: {
-        message: `The organisation with ID '${pid} could not be found'`,
-      },
-    });
+    throw new NotFoundError("organisation", pid);
   }
 
   return res.status(200).json({
@@ -219,13 +214,10 @@ export const deleteOrganisation = async (req: Request<DeleteOrganisationQueryPar
 
     res.status(204).end();
   } catch (e) {
-    if (e instanceof PrismaClientKnownRequestError) {
-      if ((e.code = "P2025")) {
-        return res.status(404).json(generateError(`The organisation with the ID ${pid} could not be found`));
-      }
-    } else if (e instanceof PrismaClientUnknownRequestError) {
-      return res.status(400).send(generateError("Unkonwn error occured. This could be due to malformed IDs"));
+    if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
+      throw new NotFoundError("organisation", pid);
     }
+    throw e;
   }
 
   return res.status(500).json(genericError);

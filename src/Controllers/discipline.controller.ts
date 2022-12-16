@@ -64,6 +64,10 @@ export const _getAllDisciplines = async (
     select: !authenticated ? basicDiscipline : authenticatedDiscipline,
   });
 
+  if (!disciplines) {
+    throw new NotFoundError("event", eventId);
+  }
+
   return res.status(200).json({
     type: "success",
     payload: {

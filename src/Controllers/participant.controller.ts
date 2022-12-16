@@ -137,8 +137,17 @@ export const createParticipant = async (req: Request<{ teamPid: string }>, res: 
 
     const maxteamsize = discipline?.discipline.maxTeamSize;
 
-    const userCount = await prisma.participant.count({
-      where: { team: { pid: teamPid } },
+    const roles = await prisma.team.findUnique({
+      where: { pid: teamPid },
+      select: { roles: true },
+    });
+
+    let userCount: number = 0;
+
+    roles?.roles.forEach((role) => {
+      if (role.participantId !== null) {
+        userCount++;
+      }
     });
 
     if (maxteamsize == userCount) {
@@ -159,9 +168,7 @@ export const createParticipant = async (req: Request<{ teamPid: string }>, res: 
     return res.status(201).json({ type: "success", payload: { participant } });
   } catch (e) {
     if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
-      return res
-        .status(404)
-        .json(generateError(`Could not link to team with ID '${teamPid}, or group with ID ${body.groupPid}'`));
+      throw new NotFoundError("team", teamPid);
     }
     throw e;
   }

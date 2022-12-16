@@ -117,7 +117,7 @@ export const requestToken = async (req: Request, res: Response) => {
   });
 
   if (!team) {
-    return res.status(404).json(generateError("Team does not exist!"));
+    throw new NotFoundError("team", teamId);
   }
 
   const usid = nanoid();

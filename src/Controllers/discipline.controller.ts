@@ -65,7 +65,7 @@ export const _getAllDisciplines = async (
   });
 
   if (!disciplines) {
-    throw new NotFoundError("event", eventId);
+    throw new NotFoundError("disciplines of the event", eventId);
   }
 
   return res.status(200).json({

@@ -150,6 +150,14 @@ export const deleteTeam = async (req: Request, res: Response) => {
   }
 };
 
+export const deleteUnverifiedTeams =async (req: Request, res: Response) => {
+  const { pid } = req.params;
+
+  await _deleteUnverifiedTeams(pid);
+
+  res.status(204).end();
+}
+
 export async function checkTeamExistence(teamPid: string) {
   const teamCount = await prisma.team.count({
     where: { pid: teamPid },
@@ -172,4 +180,15 @@ export async function getGroupsByTeamPid(teamPid: string) {
   });
 
   return groups;
+};
+
+export async function _deleteUnverifiedTeams(eventPid: string) {
+  await prisma.team.deleteMany({
+    where: {
+      AND: [{discipline: {event: {pid: eventPid}}},
+        {verified: {equals: false}}
+      ]
+    }
+    
+  });
 };

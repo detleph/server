@@ -44,7 +44,7 @@ const detailedTeam = {
 const verified = {
   verified: {
     equals: true,
-  }
+  },
 };
 
 export const getTeams = async (req: Request, res: Response) => {
@@ -66,7 +66,7 @@ export const getTeam = async (req: Request<{ pid: string }>, res: Response) => {
   }
 
   const team = await prisma.team.findUnique({
-    where: {pid: pid},
+    where: { pid: pid },
     select: detailedTeam,
   });
 
@@ -150,13 +150,13 @@ export const deleteTeam = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteUnverifiedTeams =async (req: Request, res: Response) => {
+export const deleteUnverifiedTeams = async (req: Request, res: Response) => {
   const { pid } = req.params;
 
   await _deleteUnverifiedTeams(pid);
 
   res.status(204).end();
-}
+};
 
 export async function checkTeamExistence(teamPid: string) {
   const teamCount = await prisma.team.count({
@@ -165,7 +165,7 @@ export async function checkTeamExistence(teamPid: string) {
   if (teamCount == 0) {
     throw new NotFoundError("team", teamPid);
   }
-};
+}
 
 export async function getGroupsByTeamPid(teamPid: string) {
   const team = await prisma.team.findUnique({
@@ -175,20 +175,17 @@ export async function getGroupsByTeamPid(teamPid: string) {
 
   let groups: string[] = [];
 
-  team?.participants.forEach((participant: { group: { pid: string; }; }) => {
+  team?.participants.forEach((participant: { group: { pid: string } }) => {
     groups.push(participant.group.pid);
   });
 
   return groups;
-};
+}
 
 export async function _deleteUnverifiedTeams(eventPid: string) {
   await prisma.team.deleteMany({
     where: {
-      AND: [{discipline: {event: {pid: eventPid}}},
-        {verified: {equals: false}}
-      ]
-    }
-    
+      AND: [{ discipline: { event: { pid: eventPid } } }, { verified: { equals: false } }],
+    },
   });
-};
+}

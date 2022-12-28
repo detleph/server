@@ -22,10 +22,5 @@ router.delete<"/:pid/", { pid: string }>(
   requireConfiguredAuthentication({ optional: false, type: { admin: true, teamleader: true } }),
   deleteTeam
 );
-router.delete<"/:pid/deleteUnverified/", {pid: string}>(
-  "/:pid/deleteUnverified/",
-  requireConfiguredAuthentication({optional: false, type: "admin"}),
-  deleteUnverifiedTeams
-);
 
 export default router;

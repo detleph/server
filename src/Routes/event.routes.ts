@@ -15,10 +15,10 @@ router.patch<"/:pid/", { pid: string }>("/:pid/", requireAuthentication, updateE
 
 router.delete<"/:pid/", { pid: string }>("/:pid/", requireAuthentication, deleteEvent);
 
-router.delete<"/:pid/deleteUnverified/", {pid: string}>(
-    "/:pid/deleteUnverified/",
-    requireConfiguredAuthentication({optional: false, type: "admin"}),
-    deleteUnverifiedTeams
-  );
+router.delete<"/:pid/deleteUnverified/", { pid: string }>(
+  "/:pid/deleteUnverified/",
+  requireConfiguredAuthentication({ optional: false, type: "admin" }),
+  deleteUnverifiedTeams
+);
 
 export default router;

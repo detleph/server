@@ -3,6 +3,7 @@ import { PrismaClientKnownRequestError, PrismaClientUnknownRequestError } from "
 import { Request, Response } from "express";
 import { ZodError } from "zod";
 import prisma from "../lib/prisma";
+import NotFoundError from "../Middleware/error/NotFoundError";
 
 interface StringIndexedObject {
   [k: string]: any;
@@ -151,12 +152,7 @@ export async function handleCreateByName(
   const linked = await prisma[link.type].findUnique({ where: { pid: link.id }, select: { id: true } });
 
   if (!linked) {
-    return res.status(404).json({
-      type: "error",
-      payload: {
-        message: `Could not link to ${link.type} with ID '${link.id}'`,
-      },
-    });
+    throw new NotFoundError(link.type, link.id);
   }
 
   // @ts-ignore

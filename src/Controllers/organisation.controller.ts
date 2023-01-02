@@ -212,13 +212,11 @@ export const deleteOrganisation = async (req: Request<DeleteOrganisationQueryPar
   try {
     await prisma.organisation.delete({ where: { pid } });
 
-    res.status(204).end();
+    return res.status(204).send();
   } catch (e) {
     if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
       throw new NotFoundError("organisation", pid);
     }
     throw e;
   }
-
-  return res.status(500).json(genericError);
 };

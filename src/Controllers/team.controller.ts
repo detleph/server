@@ -8,6 +8,7 @@ import { requireResponsibleForGroups } from "../Middleware/auth/auth";
 import AuthError from "../Middleware/error/AuthError";
 import { runInNewContext } from "vm";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
+import logger from "../Middleware/error/logger";
 
 require("express-async-errors");
 
@@ -53,7 +54,7 @@ export const getTeams = async (req: Request, res: Response) => {
   }
   const teams = await prisma.team.findMany({ where: verified, select: basicTeam });
 
-  res.status(200).json({ type: "success", payload: { teams } });
+  return res.status(200).json({ type: "success", payload: { teams } });
 };
 
 export const getTeam = async (req: Request<{ pid: string }>, res: Response) => {
@@ -66,7 +67,7 @@ export const getTeam = async (req: Request<{ pid: string }>, res: Response) => {
   }
 
   const team = await prisma.team.findUnique({
-    where: { pid: pid },
+    where: { pid },
     select: detailedTeam,
   });
 
@@ -140,7 +141,7 @@ export const deleteTeam = async (req: Request, res: Response) => {
   try {
     await prisma.team.delete({ where: { pid } });
 
-    res.status(204).json({ type: "success", payload: { message: "Sucesfully deleted team" } });
+    res.status(204).json({ type: "success", payload: { message: "Succesfully deleted team" } });
   } catch (e) {
     if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
       throw new NotFoundError("team", pid);
@@ -151,11 +152,15 @@ export const deleteTeam = async (req: Request, res: Response) => {
 };
 
 export const deleteUnverifiedTeams = async (req: Request, res: Response) => {
+  if (req.auth?.permission_level == "STANDARD") {
+    throw new AuthError("A STANDARD Admin is not allowed to delete unverified teams!");
+  }
+
   const { pid } = req.params;
 
   await _deleteUnverifiedTeams(pid);
 
-  res.status(204).end();
+  res.status(204).send();
 };
 
 export async function checkTeamExistence(teamPid: string) {

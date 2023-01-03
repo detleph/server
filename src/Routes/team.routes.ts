@@ -1,6 +1,6 @@
 import express from "express";
 import { requireConfiguredAuthentication } from "../Middleware/auth/auth";
-import { deleteTeam, deleteUnverifiedTeams, getTeam, getTeams, updateTeam } from "../Controllers/team.controller";
+import { deleteTeam, getTeam, getTeams, updateTeam } from "../Controllers/team.controller";
 import { getRolesForTeam } from "../Controllers/role.controller";
 
 const router = express.Router();

@@ -42,17 +42,19 @@ const detailedTeam = {
   },
 };
 
-const verified = {
-  verified: {
-    equals: true,
-  },
-};
-
-export const getTeams = async (req: Request, res: Response) => {
+export const getTeams = async (req: Request<{}, {}, {}, { showHidden?: string }>, res: Response) => {
   if (req.auth?.permission_level == "STANDARD") {
     throw new AuthError("A STANDARD Admin is not allowed to get all teams!");
   }
-  const teams = await prisma.team.findMany({ where: verified, select: basicTeam });
+
+  const show: boolean = req.query.showHidden === "true";
+
+  logger.info(typeof show);
+
+  const teams = await prisma.team.findMany({
+    where: { verified: { equals: show ? undefined : true } },
+    select: basicTeam,
+  });
 
   return res.status(200).json({ type: "success", payload: { teams } });
 };

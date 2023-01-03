@@ -49,8 +49,6 @@ export const getTeams = async (req: Request<{}, {}, {}, { showHidden?: string }>
 
   const show: boolean = req.query.showHidden === "true";
 
-  logger.info(typeof show);
-
   const teams = await prisma.team.findMany({
     where: { verified: { equals: show ? undefined : true } },
     select: basicTeam,
